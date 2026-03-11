@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tables MN90 — Calculateur FFESSM</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ocean-deep: #0a1628;
+  --ocean-mid: #0d2140;
+  --ocean-surface: #1a3a5c;
+  --accent: #00c8ff;
+  --accent2: #00ffc8;
+  --warn: #ff6b35;
+  --danger: #ff2d55;
+  --gps-star: #ff2d55;
+  --text: #e8f4f8;
+  --text-dim: #7aa5c0;
+  --panel: rgba(13,33,64,0.85);
+  --border: rgba(0,200,255,0.18);
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --display: 'Bebas Neue', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--ocean-deep);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background effet eau */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 20% 80%, rgba(0,100,180,0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,200,255,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(10,22,40,0) 0%, var(--ocean-deep) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 16px 60px; }
+
+/* HEADER */
+header {
+  text-align: center;
+  padding: 36px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+header h1 {
+  font-family: var(--display);
+  font-size: clamp(2rem, 6vw, 3.8rem);
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-shadow: 0 0 40px rgba(0,200,255,0.3);
+  line-height: 1;
+}
+header p {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--ocean-mid);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.tab {
+  flex: 1;
+  padding: 10px 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s;
+  text-align: center;
+}
+.tab:hover { color: var(--text); background: rgba(0,200,255,0.06); }
+.tab.active {
+  background: rgba(0,200,255,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(0,200,255,0.25);
+}
+
+/* PANELS */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(8px);
+}
+.card-title {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .badge {
+  background: rgba(0,200,255,0.1);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  color: var(--text-dim);
+}
+
+/* FORM GRID */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:500px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.field input, .field select {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,200,255,0.2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,200,255,0.12); }
+.field select { cursor: pointer; }
+
+/* RESULT BOX */
+.result-box {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(0,200,255,0.25);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-top: 16px;
+}
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.88rem;
+}
+.result-row:last-child { border-bottom: none; }
+.result-label { color: var(--text-dim); font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; }
+.result-value { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.result-value.accent { color: var(--accent); font-size: 1.05rem; }
+.result-value.gps { 
+  font-family: var(--display);
+  font-size: 1.6rem;
+  letter-spacing: 0.05em;
+  color: var(--accent2);
+}
+.result-value.gps.star { color: var(--gps-star); }
+
+/* PALIERS TABLE */
+.paliers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+.paliers-table th {
+  background: rgba(0,200,255,0.08);
+  color: var(--accent);
+  padding: 7px 10px;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  border: 1px solid var(--border);
+}
+.paliers-table td {
+  padding: 7px 10px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.05);
+  color: var(--text);
+}
+.paliers-table tr:hover td { background: rgba(0,200,255,0.04); }
+.paliers-table td.zero { color: var(--text-dim); }
+.paliers-table td.nonzero { color: var(--accent2); font-weight: 600; }
+
+/* BTN */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,200,255,0.1);
+  border: 1px solid rgba(0,200,255,0.35);
+  border-radius: 7px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+.btn:hover { background: rgba(0,200,255,0.18); border-color: var(--accent); }
+.btn.primary {
+  background: rgba(0,200,255,0.15);
+  border-color: var(--accent);
+  padding: 11px 28px;
+  font-size: 0.82rem;
+}
+.btn.full { width: 100%; justify-content: center; }
+
+/* ALERT */
+.alert {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 0.77rem;
+  line-height: 1.5;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.alert.warn { background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3); color: #ffaa77; }
+.alert.danger { background: rgba(255,45,85,0.1); border: 1px solid rgba(255,45,85,0.3); color: #ff7799; }
+.alert.info { background: rgba(0,200,255,0.07); border: 1px solid rgba(0,200,255,0.2); color: var(--text-dim); }
+.alert.success { background: rgba(0,255,200,0.07); border: 1px solid rgba(0,255,200,0.2); color: #88ffdd; }
+
+/* PROFILE CHART */
+#profileCanvas {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+}
+
+/* DIVE PROFILE CONTAINER */
+.profile-container { margin-top: 16px; }
+
+/* SECTION HEADER */
+.section-sep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 14px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.section-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* STEPPERS */
+.steps-grid { display: flex; flex-direction: column; gap: 8px; }
+.step-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 7px;
+  border-left: 2px solid var(--accent);
+}
+.step-num {
+  font-family: var(--display);
+  font-size: 1.2rem;
+  color: var(--accent);
+  min-width: 22px;
+  line-height: 1.3;
+}
+.step-content { flex: 1; }
+.step-title { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.step-value { font-family: var(--mono); font-size: 0.92rem; color: var(--text); margin-top: 2px; }
+.step-value.hl { color: var(--accent2); font-weight: 600; }
+
+/* SUCCESSIVE div */
+.succ-block { margin-top: 0; }
+
+/* GRID 3 col for paliers display */
+.paliers-inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.pal-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 56px;
+}
+.pal-chip .depth { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); }
+.pal-chip .mins { font-family: var(--display); font-size: 1.3rem; color: var(--accent2); line-height: 1; }
+.pal-chip .mins.zero { color: var(--ocean-surface); }
+.pal-chip .unit { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); }
+
+/* TABLEAUX view */
+.table-scroll { overflow-x: auto; }
+.mn90-table {
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  min-width: 100%;
+}
+.mn90-table th {
+  background: rgba(0,200,255,0.1);
+  color: var(--accent);
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+.mn90-table td {
+  padding: 5px 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text);
+}
+.mn90-table tr:hover td { background: rgba(0,200,255,0.05); }
+.mn90-table .gps-cell {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  color: var(--accent2);
+}
+.mn90-table .gps-cell.star { color: var(--gps-star); }
+.mn90-table .prof-cell { color: var(--accent); font-weight: 600; }
+
+/* METHOD */
+.method-block {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+}
+.method-block h3 {
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.method-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.method-row:last-child { border-bottom: none; }
+.method-row .key { color: var(--text-dim); font-family: var(--mono); font-size: 0.72rem; }
+.method-row .val { color: var(--text); }
+
+/* LOADING */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+/* DIVIDER line */
+hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* Toggle rapidité remontée */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.toggle-label { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: rgba(255,107,53,0.2); border-color: var(--warn); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--warn); }
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 24px 0 0;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+
+/* RESPONSIVE */
+@media(max-width:600px) {
+  .paliers-table td, .paliers-table th { padding: 5px 6px; font-size: 0.75rem; }
+  .mn90-table td, .mn90-table th { font-size: 0.65rem; padding: 4px 5px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>TABLES MN90</h1>
+    <p>Calculateur de plongée FFESSM · Tables fédérales à l'air</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('calcul')">⚙ Calculateur</button>
+    <button class="tab" onclick="switchTab('successives')">🔁 Successives</button>
+    <button class="tab" onclick="switchTab('tableaux')">📋 Tables</button>
+    <button class="tab" onclick="switchTab('methode')">📖 Méthode</button>
+  </div>
+
+  <!-- ======================== PANEL CALCUL ======================== -->
+  <div id="panel-calcul" class="panel active">
+    <div class="card">
+      <div class="card-title">▶ Plongée <span class="badge">P1</span></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Profondeur réelle (m)</label>
+          <input type="number" id="p1_prof" min="1" max="65" step="1" value="25" oninput="calcSimple()">
+        </div>
+        <div class="field">
+          <label>Durée de fond (min)</label>
+          <input type="number" id="p1_duree" min="1" max="360" step="1" value="30" oninput="calcSimple()">
+        </div>
+        <div class="field">
+          <label>Heure d'immersion</label>
+          <input type="time" id="p1_heure" value="09:00" oninput="calcSimple()">
+        </div>
+      </div>
+      <div class="toggle-row" style="margin-top:10px">
+        <span class="toggle-label">⚡ Remontée rapide (&gt;17 m/min)</span>
+        <label class="toggle">
+          <input type="checkbox" id="p1_rapide" onchange="calcSimple()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div id="result-simple"></div>
+  </div>
+
+  <!-- ======================== PANEL SUCCESSIVES ======================== -->
+  <div id="panel-successives" class="panel">
+    <div class="card">
+      <div class="card-title">▶ Plongée 1 <span class="badge">P1</span></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Profondeur (m)</label>
+          <input type="number" id="s_p1_prof" min="1" max="65" step="1" value="25" oninput="calcSucc()">
+        </div>
+        <div class="field">
+          <label>Durée de fond (min)</label>
+          <input type="number" id="s_p1_duree" min="1" max="360" step="1" value="30" oninput="calcSucc()">
+        </div>
+        <div class="field">
+          <label>Heure d'immersion P1</label>
+          <input type="time" id="s_p1_heure" value="09:00" oninput="calcSucc()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⏱ Intervalle surface</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Heure de plongée P2</label>
+          <input type="time" id="s_p2_heure" value="14:00" oninput="calcSucc()">
+        </div>
+      </div>
+      <div id="intervalle-info" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">▶ Plongée 2 <span class="badge">P2</span></div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Profondeur (m)</label>
+          <input type="number" id="s_p2_prof" min="1" max="65" step="1" value="20" oninput="calcSucc()">
+        </div>
+        <div class="field">
+          <label>Durée de fond réelle (min)</label>
+          <input type="number" id="s_p2_duree" min="1" max="360" step="1" value="30" oninput="calcSucc()">
+        </div>
+      </div>
+      <div class="toggle-row" style="margin-top:10px">
+        <span class="toggle-label">⚡ Remontée rapide P2</span>
+        <label class="toggle">
+          <input type="checkbox" id="s_p2_rapide" onchange="calcSucc()">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div id="result-succ"></div>
+  </div>
+
+  <!-- ======================== PANEL TABLEAUX ======================== -->
+  <div id="panel-tableaux" class="panel">
+    <div class="card">
+      <div class="card-title">Table de plongée MN90</div>
+      <div class="field" style="max-width:180px;margin-bottom:14px">
+        <label>Profondeur (m)</label>
+        <select id="table_prof" onchange="renderTable()"></select>
+      </div>
+      <div class="table-scroll" id="table-container"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Tableau I — Azote résiduel</div>
+      <div class="table-scroll" id="tab1-container"></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-title">Tableau II — Majoration (min)</div>
+      <div class="table-scroll" id="tab2-container"></div>
+    </div>
+  </div>
+
+  <!-- ======================== PANEL METHODE ======================== -->
+  <div id="panel-methode" class="panel">
+    <div class="card">
+      <div class="method-block">
+        <h3>PLONGÉE SIMPLE</h3>
+        <div class="method-row"><span class="key">Profondeur</span><span class="val">Max → arrondir à la valeur <strong>supérieure</strong> dans la table</span></div>
+        <div class="method-row"><span class="key">Durée</span><span class="val">Prendre la durée <strong>inférieure ou égale</strong> dans la table</span></div>
+        <div class="method-row"><span class="key">Paliers</span><span class="val">15m / 12m / 9m / 6m / 3m — lire directement</span></div>
+        <div class="method-row"><span class="key">GPS</span><span class="val">Lettre = groupe d'azote résiduel</span></div>
+        <div class="method-row"><span class="key">Remontée</span><span class="val">Fond → 1er palier : 15–17 m/min · Entre paliers : 6 m/min</span></div>
+      </div>
+
+      <div class="method-block">
+        <h3>PLONGÉES SUCCESSIVES <small style="font-size:.65rem;color:var(--text-dim)">(15 min &lt; intervalle ≤ 12 h)</small></h3>
+        <div class="method-row"><span class="key">Étape 1</span><span class="val">Relever le GPS de P1</span></div>
+        <div class="method-row"><span class="key">Étape 2</span><span class="val">Tableau I : GPS × intervalle (≤ réel) → azote résiduel N₂</span></div>
+        <div class="method-row"><span class="key">Étape 3</span><span class="val">Tableau II : azote (≥ valeur) × prof P2 (≥ réelle) → majoration (min)</span></div>
+        <div class="method-row"><span class="key">Étape 4</span><span class="val">Durée fictive P2 = durée réelle + majoration</span></div>
+        <div class="method-row"><span class="key">Étape 5</span><span class="val">Lire table P2 avec durée fictive</span></div>
+        <div class="method-row"><span class="key">Limite</span><span class="val">Max 2 plongées / 24 h — aucune ≤ 12 h après GPS ★</span></div>
+      </div>
+
+      <div class="method-block">
+        <h3>PLONGÉES CONSÉCUTIVES <small style="font-size:.65rem;color:var(--text-dim)">(intervalle ≤ 15 min)</small></h3>
+        <div class="method-row"><span class="key">Profondeur</span><span class="val">Maximum des deux profondeurs</span></div>
+        <div class="method-row"><span class="key">Durée</span><span class="val">Durée P1 + temps surface + Durée P2</span></div>
+        <div class="method-row"><span class="key">Calcul</span><span class="val">Lire directement dans la table avec ces valeurs</span></div>
+      </div>
+
+      <div class="method-block" style="border-left-color:var(--warn)">
+        <h3>REMONTÉE TROP RAPIDE <small style="font-size:.65rem;color:var(--text-dim)">(DTR &lt; 3 min — IPA I-4.4)</small></h3>
+        <div class="method-row"><span class="key">Étape 1</span><span class="val">Rejoindre la demi-profondeur → palier <strong>5 minutes</strong></span></div>
+        <div class="method-row"><span class="key">Étape 2</span><span class="val">Remonter à 6 m → palier <strong>1 minute</strong></span></div>
+        <div class="method-row"><span class="key">Étape 3</span><span class="val">Remonter à 3 m → palier <strong>5 minutes</strong></span></div>
+        <div class="method-row"><span class="key">Total</span><span class="val">Minimum 11 min de procédure · DTR minimum retenu = 3 min</span></div>
+      </div>
+
+      <div class="method-block" style="border-left-color:var(--danger)">
+        <h3>LIMITES</h3>
+        <div class="method-row"><span class="key">Prof. table</span><span class="val">Valeur <strong>supérieure ou égale</strong> à la profondeur réelle</span></div>
+        <div class="method-row"><span class="key">GPS ★</span><span class="val">Hors table MN90 — risque élevé d'accident de décompression</span></div>
+        <div class="method-row"><span class="key">Altitude</span><span class="val">Corrections altitude pour plongées en lac</span></div>
+        <div class="method-row"><span class="key">Nitrox</span><span class="val">Ces tables sont pour l'AIR uniquement</span></div>
+        <div class="method-row"><span class="key">DTR</span><span class="val">15 m/min fond → palier · 6 m/min inter-paliers</span></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>JSAS Périgueux · Tables MN90 FFESSM · Usage pédagogique · v27</footer>
+</div>
+
+<script>
+// ===================== DATA MN90 =====================
+const MN90_DATA = [{"prof":65,"duree":15,"pal15":0,"pal12":0,"pal9":2,"pal6":5,"pal3":24,"dtr":37,"gps":"*"},{"prof":65,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":8,"dtr":16,"gps":"*"},{"prof":65,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":3,"dtr":8,"gps":"*"},{"prof":62,"duree":15,"pal15":0,"pal12":0,"pal9":1,"pal6":5,"pal3":21,"dtr":33,"gps":"*"},{"prof":62,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":7,"dtr":14,"gps":"*"},{"prof":62,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"*"},{"prof":60,"duree":55,"pal15":5,"pal12":15,"pal9":24,"pal6":40,"pal3":88,"dtr":178,"gps":"*"},{"prof":60,"duree":50,"pal15":2,"pal12":13,"pal9":22,"pal6":37,"pal3":78,"dtr":158,"gps":"*"},{"prof":60,"duree":45,"pal15":1,"pal12":9,"pal9":19,"pal6":35,"pal3":69,"dtr":139,"gps":"*"},{"prof":60,"duree":40,"pal15":0,"pal12":6,"pal9":17,"pal6":30,"pal3":62,"dtr":121,"gps":"P"},{"prof":60,"duree":35,"pal15":0,"pal12":4,"pal9":11,"pal6":28,"pal3":54,"dtr":103,"gps":"P"},{"prof":60,"duree":30,"pal15":0,"pal12":1,"pal9":8,"pal6":22,"pal3":48,"dtr":85,"gps":"O"},{"prof":60,"duree":25,"pal15":0,"pal12":0,"pal9":5,"pal6":15,"pal3":41,"dtr":66,"gps":"M"},{"prof":60,"duree":20,"pal15":0,"pal12":0,"pal9":3,"pal6":8,"pal3":32,"dtr":48,"gps":"L"},{"prof":60,"duree":15,"pal15":0,"pal12":0,"pal9":1,"pal6":4,"pal3":19,"dtr":29,"gps":"J"},{"prof":60,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":6,"dtr":13,"gps":"G"},{"prof":60,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":58,"duree":55,"pal15":3,"pal12":14,"pal9":23,"pal6":39,"pal3":83,"dtr":168,"gps":"*"},{"prof":58,"duree":50,"pal15":1,"pal12":11,"pal9":21,"pal6":37,"pal3":74,"dtr":150,"gps":"*"},{"prof":58,"duree":45,"pal15":0,"pal12":8,"pal9":18,"pal6":33,"pal3":66,"dtr":131,"gps":"*"},{"prof":58,"duree":40,"pal15":0,"pal12":5,"pal9":15,"pal6":30,"pal3":59,"dtr":115,"gps":"P"},{"prof":58,"duree":35,"pal15":0,"pal12":2,"pal9":11,"pal6":26,"pal3":52,"dtr":97,"gps":"O"},{"prof":58,"duree":30,"pal15":0,"pal12":1,"pal9":7,"pal6":21,"pal3":46,"dtr":81,"gps":"N"},{"prof":58,"duree":25,"pal15":0,"pal12":0,"pal9":4,"pal6":13,"pal3":40,"dtr":62,"gps":"M"},{"prof":58,"duree":20,"pal15":0,"pal12":0,"pal9":2,"pal6":7,"pal3":30,"dtr":44,"gps":"K"},{"prof":58,"duree":15,"pal15":0,"pal12":0,"pal9":1,"pal6":4,"pal3":16,"dtr":26,"gps":"J"},{"prof":58,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":5,"dtr":12,"gps":"G"},{"prof":58,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":55,"duree":55,"pal15":0,"pal12":12,"pal9":22,"pal6":37,"pal3":76,"dtr":152,"gps":"*"},{"prof":55,"duree":50,"pal15":0,"pal12":8,"pal9":19,"pal6":35,"pal3":69,"dtr":136,"gps":"*"},{"prof":55,"duree":45,"pal15":0,"pal12":5,"pal9":17,"pal6":31,"pal3":62,"dtr":120,"gps":"*"},{"prof":55,"duree":40,"pal15":0,"pal12":3,"pal9":12,"pal6":29,"pal3":55,"dtr":104,"gps":"P"},{"prof":55,"duree":35,"pal15":0,"pal12":1,"pal9":9,"pal6":23,"pal3":50,"dtr":88,"gps":"O"},{"prof":55,"duree":30,"pal15":0,"pal12":0,"pal9":6,"pal6":18,"pal3":44,"dtr":73,"gps":"N"},{"prof":55,"duree":25,"pal15":0,"pal12":0,"pal9":3,"pal6":11,"pal3":37,"dtr":56,"gps":"M"},{"prof":55,"duree":20,"pal15":0,"pal12":0,"pal9":1,"pal6":6,"pal3":27,"dtr":39,"gps":"K"},{"prof":55,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":13,"dtr":22,"gps":"I"},{"prof":55,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":5,"dtr":11,"gps":"G"},{"prof":55,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"D"},{"prof":52,"duree":55,"pal15":0,"pal12":8,"pal9":19,"pal6":36,"pal3":71,"dtr":139,"gps":"*"},{"prof":52,"duree":50,"pal15":0,"pal12":5,"pal9":17,"pal6":32,"pal3":64,"dtr":123,"gps":"*"},{"prof":52,"duree":45,"pal15":0,"pal12":2,"pal9":15,"pal6":29,"pal3":59,"dtr":110,"gps":"*"},{"prof":52,"duree":40,"pal15":0,"pal12":1,"pal9":10,"pal6":26,"pal3":52,"dtr":94,"gps":"O"},{"prof":52,"duree":35,"pal15":0,"pal12":0,"pal9":6,"pal6":22,"pal3":47,"dtr":80,"gps":"O"},{"prof":52,"duree":30,"pal15":0,"pal12":0,"pal9":4,"pal6":15,"pal3":41,"dtr":65,"gps":"M"},{"prof":52,"duree":25,"pal15":0,"pal12":0,"pal9":2,"pal6":9,"pal3":34,"dtr":50,"gps":"L"},{"prof":52,"duree":20,"pal15":0,"pal12":0,"pal9":1,"pal6":5,"pal3":23,"dtr":34,"gps":"K"},{"prof":52,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":10,"dtr":18,"gps":"I"},{"prof":52,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":4,"dtr":10,"gps":"F"},{"prof":52,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"D"},{"prof":50,"duree":55,"pal15":0,"pal12":6,"pal9":18,"pal6":35,"pal3":68,"dtr":132,"gps":"*"},{"prof":50,"duree":50,"pal15":0,"pal12":3,"pal9":16,"pal6":32,"pal3":61,"dtr":117,"gps":"*"},{"prof":50,"duree":45,"pal15":0,"pal12":1,"pal9":14,"pal6":28,"pal3":55,"dtr":103,"gps":"*"},{"prof":50,"duree":40,"pal15":0,"pal12":0,"pal9":10,"pal6":25,"pal3":50,"dtr":90,"gps":"P"},{"prof":50,"duree":35,"pal15":0,"pal12":0,"pal9":6,"pal6":21,"pal3":45,"dtr":76,"gps":"O"},{"prof":50,"duree":30,"pal15":0,"pal12":0,"pal9":3,"pal6":15,"pal3":40,"dtr":62,"gps":"M"},{"prof":50,"duree":25,"pal15":0,"pal12":0,"pal9":1,"pal6":9,"pal3":33,"dtr":48,"gps":"L"},{"prof":50,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":5,"pal3":21,"dtr":31,"gps":"J"},{"prof":50,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":8,"dtr":16,"gps":"H"},{"prof":50,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":3,"dtr":9,"gps":"F"},{"prof":50,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"D"},{"prof":48,"duree":55,"pal15":0,"pal12":5,"pal9":18,"pal6":34,"pal3":66,"dtr":128,"gps":"*"},{"prof":48,"duree":50,"pal15":0,"pal12":2,"pal9":15,"pal6":30,"pal3":60,"dtr":112,"gps":"*"},{"prof":48,"duree":45,"pal15":0,"pal12":0,"pal9":12,"pal6":27,"pal3":53,"dtr":97,"gps":"*"},{"prof":48,"duree":40,"pal15":0,"pal12":0,"pal9":8,"pal6":23,"pal3":48,"dtr":84,"gps":"O"},{"prof":48,"duree":35,"pal15":0,"pal12":0,"pal9":5,"pal6":19,"pal3":44,"dtr":73,"gps":"N"},{"prof":48,"duree":30,"pal15":0,"pal12":0,"pal9":3,"pal6":14,"pal3":38,"dtr":60,"gps":"M"},{"prof":48,"duree":25,"pal15":0,"pal12":0,"pal9":1,"pal6":8,"pal3":31,"dtr":45,"gps":"L"},{"prof":48,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":19,"dtr":28,"gps":"I"},{"prof":48,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":7,"dtr":14,"gps":"G"},{"prof":48,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":3,"dtr":9,"gps":"E"},{"prof":48,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"D"},{"prof":45,"duree":55,"pal15":0,"pal12":3,"pal9":16,"pal6":33,"pal3":64,"dtr":121,"gps":"*"},{"prof":45,"duree":50,"pal15":0,"pal12":1,"pal9":14,"pal6":29,"pal3":57,"dtr":106,"gps":"*"},{"prof":45,"duree":45,"pal15":0,"pal12":0,"pal9":11,"pal6":26,"pal3":51,"dtr":93,"gps":"*"},{"prof":45,"duree":40,"pal15":0,"pal12":0,"pal9":7,"pal6":22,"pal3":46,"dtr":80,"gps":"N"},{"prof":45,"duree":35,"pal15":0,"pal12":0,"pal9":4,"pal6":18,"pal3":41,"dtr":68,"gps":"N"},{"prof":45,"duree":30,"pal15":0,"pal12":0,"pal9":2,"pal6":12,"pal3":35,"dtr":54,"gps":"L"},{"prof":45,"duree":25,"pal15":0,"pal12":0,"pal9":1,"pal6":7,"pal3":29,"dtr":42,"gps":"K"},{"prof":45,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":17,"dtr":25,"gps":"I"},{"prof":45,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":6,"dtr":12,"gps":"G"},{"prof":45,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":3,"dtr":8,"gps":"E"},{"prof":45,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":42,"duree":55,"pal15":0,"pal12":2,"pal9":15,"pal6":32,"pal3":61,"dtr":115,"gps":"*"},{"prof":42,"duree":50,"pal15":0,"pal12":0,"pal9":13,"pal6":28,"pal3":54,"dtr":100,"gps":"*"},{"prof":42,"duree":45,"pal15":0,"pal12":0,"pal9":10,"pal6":25,"pal3":49,"dtr":89,"gps":"*"},{"prof":42,"duree":40,"pal15":0,"pal12":0,"pal9":6,"pal6":21,"pal3":44,"dtr":76,"gps":"N"},{"prof":42,"duree":35,"pal15":0,"pal12":0,"pal9":4,"pal6":17,"pal3":40,"dtr":66,"gps":"M"},{"prof":42,"duree":30,"pal15":0,"pal12":0,"pal9":2,"pal6":11,"pal3":33,"dtr":51,"gps":"L"},{"prof":42,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":6,"pal3":27,"dtr":38,"gps":"K"},{"prof":42,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":15,"dtr":23,"gps":"H"},{"prof":42,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":5,"dtr":11,"gps":"F"},{"prof":42,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":42,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":40,"duree":55,"pal15":0,"pal12":1,"pal9":14,"pal6":30,"pal3":60,"dtr":110,"gps":"*"},{"prof":40,"duree":50,"pal15":0,"pal12":0,"pal9":12,"pal6":27,"pal3":52,"dtr":96,"gps":"*"},{"prof":40,"duree":45,"pal15":0,"pal12":0,"pal9":9,"pal6":24,"pal3":47,"dtr":85,"gps":"*"},{"prof":40,"duree":40,"pal15":0,"pal12":0,"pal9":5,"pal6":20,"pal3":43,"dtr":73,"gps":"N"},{"prof":40,"duree":35,"pal15":0,"pal12":0,"pal9":3,"pal6":16,"pal3":38,"dtr":62,"gps":"M"},{"prof":40,"duree":30,"pal15":0,"pal12":0,"pal9":1,"pal6":10,"pal3":32,"dtr":48,"gps":"K"},{"prof":40,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":5,"pal3":25,"dtr":35,"gps":"J"},{"prof":40,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":14,"dtr":22,"gps":"H"},{"prof":40,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":5,"dtr":11,"gps":"F"},{"prof":40,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":40,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":38,"duree":55,"pal15":0,"pal12":0,"pal9":13,"pal6":29,"pal3":58,"dtr":105,"gps":"*"},{"prof":38,"duree":50,"pal15":0,"pal12":0,"pal9":11,"pal6":26,"pal3":51,"dtr":93,"gps":"*"},{"prof":38,"duree":45,"pal15":0,"pal12":0,"pal9":8,"pal6":22,"pal3":46,"dtr":81,"gps":"*"},{"prof":38,"duree":40,"pal15":0,"pal12":0,"pal9":5,"pal6":19,"pal3":41,"dtr":70,"gps":"N"},{"prof":38,"duree":35,"pal15":0,"pal12":0,"pal9":2,"pal6":15,"pal3":37,"dtr":59,"gps":"M"},{"prof":38,"duree":30,"pal15":0,"pal12":0,"pal9":1,"pal6":9,"pal3":31,"dtr":46,"gps":"K"},{"prof":38,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":5,"pal3":23,"dtr":33,"gps":"J"},{"prof":38,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":13,"dtr":20,"gps":"H"},{"prof":38,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":4,"dtr":10,"gps":"F"},{"prof":38,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":38,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":35,"duree":55,"pal15":0,"pal12":0,"pal9":12,"pal6":27,"pal3":55,"dtr":99,"gps":"*"},{"prof":35,"duree":50,"pal15":0,"pal12":0,"pal9":9,"pal6":24,"pal3":49,"dtr":87,"gps":"*"},{"prof":35,"duree":45,"pal15":0,"pal12":0,"pal9":7,"pal6":21,"pal3":44,"dtr":77,"gps":"*"},{"prof":35,"duree":40,"pal15":0,"pal12":0,"pal9":4,"pal6":17,"pal3":39,"dtr":65,"gps":"M"},{"prof":35,"duree":35,"pal15":0,"pal12":0,"pal9":2,"pal6":13,"pal3":35,"dtr":55,"gps":"L"},{"prof":35,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":9,"pal3":30,"dtr":44,"gps":"K"},{"prof":35,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":22,"dtr":31,"gps":"J"},{"prof":35,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":12,"dtr":19,"gps":"H"},{"prof":35,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":4,"dtr":10,"gps":"F"},{"prof":35,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":35,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":32,"duree":55,"pal15":0,"pal12":0,"pal9":11,"pal6":26,"pal3":52,"dtr":94,"gps":"*"},{"prof":32,"duree":50,"pal15":0,"pal12":0,"pal9":8,"pal6":22,"pal3":47,"dtr":82,"gps":"*"},{"prof":32,"duree":45,"pal15":0,"pal12":0,"pal9":5,"pal6":19,"pal3":42,"dtr":71,"gps":"*"},{"prof":32,"duree":40,"pal15":0,"pal12":0,"pal9":3,"pal6":16,"pal3":38,"dtr":62,"gps":"M"},{"prof":32,"duree":35,"pal15":0,"pal12":0,"pal9":1,"pal6":12,"pal3":34,"dtr":52,"gps":"L"},{"prof":32,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":8,"pal3":29,"dtr":42,"gps":"J"},{"prof":32,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":21,"dtr":30,"gps":"J"},{"prof":32,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":11,"dtr":18,"gps":"G"},{"prof":32,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":4,"dtr":9,"gps":"E"},{"prof":32,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":6,"gps":"D"},{"prof":32,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":30,"duree":55,"pal15":0,"pal12":0,"pal9":9,"pal6":25,"pal3":50,"dtr":89,"gps":"P"},{"prof":30,"duree":50,"pal15":0,"pal12":0,"pal9":7,"pal6":21,"pal3":45,"dtr":78,"gps":"O"},{"prof":30,"duree":45,"pal15":0,"pal12":0,"pal9":5,"pal6":17,"pal3":41,"dtr":68,"gps":"N"},{"prof":30,"duree":40,"pal15":0,"pal12":0,"pal9":3,"pal6":14,"pal3":36,"dtr":58,"gps":"M"},{"prof":30,"duree":35,"pal15":0,"pal12":0,"pal9":1,"pal6":11,"pal3":32,"dtr":49,"gps":"L"},{"prof":30,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":7,"pal3":27,"dtr":39,"gps":"J"},{"prof":30,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":19,"dtr":27,"gps":"I"},{"prof":30,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":10,"dtr":16,"gps":"G"},{"prof":30,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":4,"dtr":9,"gps":"E"},{"prof":30,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":6,"gps":"C"},{"prof":30,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":28,"duree":55,"pal15":0,"pal12":0,"pal9":8,"pal6":23,"pal3":49,"dtr":85,"gps":"O"},{"prof":28,"duree":50,"pal15":0,"pal12":0,"pal9":5,"pal6":20,"pal3":44,"dtr":74,"gps":"N"},{"prof":28,"duree":45,"pal15":0,"pal12":0,"pal9":4,"pal6":16,"pal3":39,"dtr":64,"gps":"N"},{"prof":28,"duree":40,"pal15":0,"pal12":0,"pal9":2,"pal6":13,"pal3":34,"dtr":54,"gps":"M"},{"prof":28,"duree":35,"pal15":0,"pal12":0,"pal9":1,"pal6":9,"pal3":30,"dtr":45,"gps":"L"},{"prof":28,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":6,"pal3":25,"dtr":36,"gps":"J"},{"prof":28,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":18,"dtr":26,"gps":"I"},{"prof":28,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":9,"dtr":15,"gps":"G"},{"prof":28,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":3,"dtr":8,"gps":"E"},{"prof":28,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":6,"gps":"C"},{"prof":28,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":25,"duree":55,"pal15":0,"pal12":0,"pal9":4,"pal6":19,"pal3":46,"dtr":74,"gps":"O"},{"prof":25,"duree":50,"pal15":0,"pal12":0,"pal9":2,"pal6":16,"pal3":41,"dtr":64,"gps":"N"},{"prof":25,"duree":45,"pal15":0,"pal12":0,"pal9":1,"pal6":13,"pal3":37,"dtr":56,"gps":"M"},{"prof":25,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":10,"pal3":33,"dtr":48,"gps":"M"},{"prof":25,"duree":35,"pal15":0,"pal12":0,"pal9":0,"pal6":7,"pal3":28,"dtr":40,"gps":"L"},{"prof":25,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":22,"dtr":31,"gps":"J"},{"prof":25,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":15,"dtr":22,"gps":"H"},{"prof":25,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":8,"dtr":14,"gps":"G"},{"prof":25,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":3,"dtr":8,"gps":"E"},{"prof":25,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":6,"gps":"C"},{"prof":25,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":22,"duree":55,"pal15":0,"pal12":0,"pal9":0,"pal6":16,"pal3":44,"dtr":65,"gps":"N"},{"prof":22,"duree":50,"pal15":0,"pal12":0,"pal9":0,"pal6":13,"pal3":40,"dtr":58,"gps":"M"},{"prof":22,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":10,"pal3":36,"dtr":51,"gps":"M"},{"prof":22,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":8,"pal3":31,"dtr":44,"gps":"L"},{"prof":22,"duree":35,"pal15":0,"pal12":0,"pal9":0,"pal6":5,"pal3":26,"dtr":36,"gps":"K"},{"prof":22,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":3,"pal3":20,"dtr":28,"gps":"J"},{"prof":22,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":13,"dtr":19,"gps":"H"},{"prof":22,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":7,"dtr":12,"gps":"F"},{"prof":22,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":22,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":22,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":20,"duree":55,"pal15":0,"pal12":0,"pal9":0,"pal6":13,"pal3":42,"dtr":60,"gps":"M"},{"prof":20,"duree":50,"pal15":0,"pal12":0,"pal9":0,"pal6":11,"pal3":38,"dtr":54,"gps":"M"},{"prof":20,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":9,"pal3":34,"dtr":48,"gps":"L"},{"prof":20,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":7,"pal3":29,"dtr":41,"gps":"K"},{"prof":20,"duree":35,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":24,"dtr":33,"gps":"J"},{"prof":20,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":18,"dtr":25,"gps":"I"},{"prof":20,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":11,"dtr":17,"gps":"G"},{"prof":20,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":6,"dtr":11,"gps":"F"},{"prof":20,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":20,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":20,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":18,"duree":55,"pal15":0,"pal12":0,"pal9":0,"pal6":10,"pal3":40,"dtr":55,"gps":"M"},{"prof":18,"duree":50,"pal15":0,"pal12":0,"pal9":0,"pal6":8,"pal3":36,"dtr":49,"gps":"L"},{"prof":18,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":6,"pal3":31,"dtr":42,"gps":"K"},{"prof":18,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":4,"pal3":26,"dtr":35,"gps":"J"},{"prof":18,"duree":35,"pal15":0,"pal12":0,"pal9":0,"pal6":2,"pal3":21,"dtr":28,"gps":"H"},{"prof":18,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":1,"pal3":15,"dtr":21,"gps":"G"},{"prof":18,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":9,"dtr":14,"gps":"F"},{"prof":18,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":4,"dtr":9,"gps":"E"},{"prof":18,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":2,"dtr":7,"gps":"D"},{"prof":18,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"C"},{"prof":18,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":5,"gps":"B"},{"prof":15,"duree":120,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"H"},{"prof":15,"duree":80,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"G"},{"prof":15,"duree":60,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"F"},{"prof":15,"duree":50,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"E"},{"prof":15,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"D"},{"prof":15,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"D"},{"prof":15,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"C"},{"prof":15,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"B"},{"prof":15,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"A"},{"prof":12,"duree":85,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"M"},{"prof":12,"duree":65,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"L"},{"prof":12,"duree":60,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"K"},{"prof":12,"duree":55,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"J"},{"prof":12,"duree":50,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"I"},{"prof":12,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"I"},{"prof":12,"duree":40,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"H"},{"prof":12,"duree":35,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"G"},{"prof":12,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"F"},{"prof":12,"duree":25,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"E"},{"prof":12,"duree":20,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"D"},{"prof":12,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"C"},{"prof":12,"duree":10,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"B"},{"prof":12,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"A"},{"prof":10,"duree":75,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"G"},{"prof":10,"duree":60,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"F"},{"prof":10,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"E"},{"prof":10,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"D"},{"prof":10,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"C"},{"prof":10,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"B"},{"prof":8,"duree":90,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"I"},{"prof":8,"duree":75,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"H"},{"prof":8,"duree":60,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"G"},{"prof":8,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"F"},{"prof":8,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"E"},{"prof":8,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"C"},{"prof":8,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"B"},{"prof":6,"duree":180,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"J"},{"prof":6,"duree":165,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"I"},{"prof":6,"duree":135,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"H"},{"prof":6,"duree":105,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"G"},{"prof":6,"duree":75,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"F"},{"prof":6,"duree":45,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"E"},{"prof":6,"duree":30,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"D"},{"prof":6,"duree":15,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"C"},{"prof":6,"duree":5,"pal15":0,"pal12":0,"pal9":0,"pal6":0,"pal3":1,"dtr":1,"gps":"B"}];
+
+// Tableau I : GPS × intervalle -> N2
+const TAB1 = {
+  intervals: ["0h15","0h30","0h45","1h00","1h30","2h00","2h30","3h00","3h30","4h00","4h30","5h00","5h30","6h00","6h30","7h00","7h30","8h00","8h30","9h00","9h30","10h00","10h30","11h00","11h30","12h00"],
+  data: {
+    "A":[0.84,0.83,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "B":[0.88,0.88,0.87,0.86,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "C":[0.92,0.91,0.90,0.89,0.88,0.87,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "D":[0.97,0.95,0.94,0.93,0.91,0.89,0.88,0.86,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "E":[1.00,0.98,0.97,0.96,0.93,0.91,0.89,0.88,0.87,0.86,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "F":[1.05,1.03,1.01,0.99,0.96,0.94,0.91,0.90,0.88,0.87,0.86,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "G":[1.08,1.06,1.04,1.02,0.98,0.96,0.93,0.91,0.89,0.88,0.87,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81,0.81],
+    "H":[1.13,1.10,1.08,1.05,1.01,0.98,0.95,0.93,0.91,0.89,0.88,0.86,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81],
+    "I":[1.17,1.14,1.11,1.08,1.04,1.00,0.97,0.94,0.92,0.90,0.88,0.87,0.86,0.85,0.84,0.84,0.83,0.83,0.82,0.82,0.81,0.81,0.81,0.81,0.81,0.81],
+    "J":[1.20,1.17,1.14,1.11,1.06,1.02,0.98,0.96,0.93,0.91,0.89,0.88,0.87,0.86,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81,0.81],
+    "K":[1.25,1.21,1.18,1.15,1.09,1.04,1.01,0.97,0.95,0.92,0.90,0.89,0.87,0.86,0.85,0.84,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81],
+    "L":[1.29,1.25,1.21,1.17,1.12,1.07,1.02,0.99,0.96,0.93,0.91,0.89,0.88,0.87,0.86,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81,0.81],
+    "M":[1.33,1.29,1.25,1.21,1.14,1.09,1.04,1.01,0.97,0.94,0.92,0.90,0.89,0.87,0.86,0.85,0.84,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81],
+    "N":[1.37,1.32,1.28,1.24,1.17,1.11,1.06,1.02,0.98,0.95,0.93,0.91,0.89,0.88,0.87,0.85,0.85,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81,0.81],
+    "O":[1.41,1.36,1.32,1.27,1.20,1.13,1.08,1.04,1.00,0.97,0.94,0.92,0.90,0.88,0.87,0.86,0.85,0.84,0.84,0.83,0.82,0.82,0.82,0.81,0.81,0.81],
+    "P":[1.45,1.40,1.35,1.30,1.22,1.15,1.10,1.05,1.01,0.98,0.95,0.93,0.91,0.89,0.87,0.86,0.85,0.84,0.84,0.83,0.83,0.82,0.82,0.82,0.81,0.81]
+  }
+};
+
+// Tableau II : N2 × profondeur -> majoration (min)
+const TAB2 = {
+  profs: [12,15,18,20,22,25,28,30,32,35,38,40,42,45,48,50,52,55,58,60],
+  data: {
+    "0.82":[4,3,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    "0.84":[7,6,5,4,4,3,3,3,3,2,2,2,2,2,2,2,2,2,1,1],
+    "0.86":[11,9,7,7,6,5,5,4,4,4,3,3,3,3,3,3,3,2,2,2],
+    "0.89":[17,13,11,10,9,8,7,7,6,6,5,5,5,4,4,4,4,4,3,3],
+    "0.92":[23,18,15,13,12,11,10,9,8,8,7,7,6,6,5,5,5,5,5,4],
+    "0.95":[29,23,19,17,15,13,12,11,10,10,9,8,8,7,7,7,6,6,6,5],
+    "0.99":[38,30,24,22,20,17,15,14,13,12,11,11,10,9,9,8,8,8,7,7],
+    "1.03":[47,37,30,27,24,21,19,17,16,15,14,13,12,11,11,10,10,9,9,9],
+    "1.07":[57,44,36,32,29,25,22,21,19,18,16,15,15,13,13,12,12,11,10,10],
+    "1.11":[68,52,42,37,34,29,26,24,22,20,19,18,17,16,15,14,13,13,12,12],
+    "1.16":[81,62,50,44,40,34,30,28,26,24,22,21,20,18,17,16,16,15,14,13],
+    "1.20":[93,70,56,50,45,39,34,32,29,27,24,23,22,20,19,18,18,17,16,15],
+    "1.24":[106,79,63,56,50,43,38,35,33,30,27,26,24,23,21,20,19,18,17,17],
+    "1.29":[124,91,72,63,56,49,43,40,37,33,30,29,27,25,24,23,22,20,19,19],
+    "1.33":[139,101,79,70,62,53,47,43,40,36,33,31,30,28,26,25,24,22,21,20],
+    "1.38":[160,114,89,78,69,59,52,48,44,40,37,35,33,30,28,27,26,24,23,22],
+    "1.42":[180,126,97,85,75,64,56,52,48,43,39,37,35,33,30,29,28,26,25,24],
+    "1.45":[196,135,104,90,80,68,59,55,51,46,42,39,37,34,32,31,29,28,26,25]
+  }
+};
+
+// ===================== FONCTIONS UTILITAIRES =====================
+function lookupEntry(prof, duree) {
+  // Trouver profondeur table >= prof réelle
+  const tableDepts = [...new Set(MN90_DATA.map(r => r.prof))].sort((a,b) => a-b);
+  const tableProfFound = tableDepts.find(p => p >= prof);
+  if (!tableProfFound) return null;
+  
+  const rows = MN90_DATA.filter(r => r.prof === tableProfFound).sort((a,b) => b.duree - a.duree);
+  const entry = rows.find(r => r.duree <= duree);
+  return entry ? { ...entry, profTable: tableProfFound } : null;
+}
+
+function lookupEntryExact(prof, duree) {
+  // Profondeur table >= prof, durée table <= duree
+  return lookupEntry(prof, duree);
+}
+
+function intervalToMin(h1, h2) {
+  // retourne l'intervalle en minutes entre deux heures
+  const [h1h, h1m] = h1.split(':').map(Number);
+  const [h2h, h2m] = h2.split(':').map(Number);
+  let diff = (h2h * 60 + h2m) - (h1h * 60 + h1m);
+  if (diff < 0) diff += 24 * 60;
+  return diff;
+}
+
+function addMinutes(timeStr, mins) {
+  const [h, m] = timeStr.split(':').map(Number);
+  let total = h * 60 + m + mins;
+  total = total % (24 * 60);
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+
+function formatMin(m) {
+  if (m < 60) return `${m} min`;
+  return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`;
+}
+
+function intervalToLabel(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h${String(m).padStart(2,'0')}`;
+}
+
+// Tableau I lookup : GPS + intervalle (en min) → N2 résiduel
+function getN2(gps, intervalMin) {
+  if (gps === '*') return null;
+  const intervals = TAB1.intervals;
+  const vals = TAB1.data[gps];
+  if (!vals) return null;
+  
+  // Trouver l'intervalle INFÉRIEUR OU ÉGAL
+  const intMins = intervals.map(s => {
+    const [h, m] = s.replace('h',':').split(':').map(Number);
+    return h * 60 + m;
+  });
+  
+  let idx = -1;
+  for (let i = 0; i < intMins.length; i++) {
+    if (intMins[i] <= intervalMin) idx = i;
+  }
+  if (idx === -1) return null; // < 15 min = consécutives
+  return vals[idx];
+}
+
+// Tableau II lookup : N2 + profondeur → majoration
+function getMajoration(n2, prof) {
+  const tab2Keys = Object.keys(TAB2.data).map(Number).sort((a,b) => a-b);
+  const keyFound = tab2Keys.find(k => k >= n2);
+  if (!keyFound) return null;
+  
+  const profs = TAB2.profs;
+  const profFound = profs.find(p => p >= prof);
+  if (!profFound) return null;
+  
+  const profIdx = profs.indexOf(profFound);
+  return TAB2.data[String(keyFound)][profIdx];
+}
+
+// ===================== CALCUL SIMPLE =====================
+function calcSimple() {
+  const prof = parseInt(document.getElementById('p1_prof').value) || 0;
+  const duree = parseInt(document.getElementById('p1_duree').value) || 0;
+  const heure = document.getElementById('p1_heure').value || '09:00';
+  const rapide = document.getElementById('p1_rapide').checked;
+  
+  const el = document.getElementById('result-simple');
+  if (!prof || !duree) { el.innerHTML = ''; return; }
+  
+  const entry = lookupEntry(prof, duree);
+  if (!entry) {
+    el.innerHTML = `<div class="alert danger">⚠ Aucune entrée dans la table pour ${prof}m / ${duree}min. Vérifiez les limites MN90.</div>`;
+    return;
+  }
+  
+  let html = '';
+  
+  // Alerte GPS *
+  if (entry.gps === '*') {
+    html += `<div class="alert danger">🚫 GPS ★ — Plongées successives interdites ! Hors table, risque élevé d'accident de décompression.</div>`;
+  }
+  
+  // Alerte remontée rapide
+  if (rapide) {
+    html += `<div class="alert warn">⚡ Remontée rapide détectée — Application de la procédure IPA I-4.4 (palier demi-profondeur 5 min + 6m 1 min + 3m 5 min).</div>`;
+  }
+  
+  // Correction si profondeur table > profondeur réelle
+  if (entry.profTable !== prof) {
+    html += `<div class="alert info">📐 Profondeur arrondie à la table : ${prof}m → ${entry.profTable}m</div>`;
+  }
+  if (entry.duree !== duree) {
+    html += `<div class="alert info">⏱ Durée arrondie à la table : ${duree}min → ${entry.duree}min (durée inférieure ou égale)</div>`;
+  }
+
+  // Paliers
+  const paliers = [
+    {depth: '15 m', mins: entry.pal15},
+    {depth: '12 m', mins: entry.pal12},
+    {depth: '9 m', mins: entry.pal9},
+    {depth: '6 m', mins: entry.pal6},
+    {depth: '3 m', mins: entry.pal3},
+  ];
+
+  html += `<div class="card">
+    <div class="card-title">Résultat <span class="badge">${entry.profTable}m / ${entry.duree}min</span></div>
+    
+    <div class="result-box">
+      <div class="result-row">
+        <span class="result-label">Profondeur table</span>
+        <span class="result-value accent">${entry.profTable} m</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Durée fond table</span>
+        <span class="result-value accent">${entry.duree} min</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">DTR total</span>
+        <span class="result-value accent">${entry.dtr} min</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">GPS</span>
+        <span class="result-value gps ${entry.gps === '*' ? 'star' : ''}">${entry.gps}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Heure sortie eau</span>
+        <span class="result-value accent">${addMinutes(heure, entry.duree + entry.dtr)}</span>
+      </div>
+    </div>
+
+    <div class="section-sep">Paliers de décompression</div>
+    <div class="paliers-inline">`;
+  
+  paliers.forEach(p => {
+    html += `<div class="pal-chip">
+      <span class="depth">${p.depth}</span>
+      <span class="mins ${p.mins === 0 ? 'zero' : ''}">${p.mins}</span>
+      <span class="unit">min</span>
+    </div>`;
+  });
+  
+  html += `</div></div>`;
+  
+  // Dessin du profil
+  html += `<div class="card profile-container">
+    <div class="card-title">Profil de plongée</div>
+    <canvas id="profileCanvas"></canvas>
+  </div>`;
+  
+  el.innerHTML = html;
+  
+  // Draw profile
+  setTimeout(() => drawProfile(entry, heure), 50);
+}
+
+function drawProfile(entry, heure) {
+  const canvas = document.getElementById('profileCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth; canvas.width = W; canvas.height = 200;
+  
+  const pad = { top: 20, right: 20, bottom: 35, left: 40 };
+  const cw = W - pad.left - pad.right;
+  const ch = 200 - pad.top - pad.bottom;
+  
+  ctx.clearRect(0, 0, W, 200);
+  
+  // Background
+  const grad = ctx.createLinearGradient(0, pad.top, 0, 200 - pad.bottom);
+  grad.addColorStop(0, 'rgba(0,100,180,0.15)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.1)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(pad.left, pad.top, cw, ch);
+  
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,200,255,0.08)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (ch / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+  }
+  
+  // Build timeline
+  // Descent (1.5min per 10m approx, simplified)
+  const descentRate = 15; // m/min
+  const descentTime = Math.ceil(entry.profTable / descentRate);
+  const foundTime = entry.duree;
+  
+  // Ascent to first stop (simplified 15m/min)
+  const firstPalDepth = entry.pal15 > 0 ? 15 : entry.pal12 > 0 ? 12 : entry.pal9 > 0 ? 9 : entry.pal6 > 0 ? 6 : 3;
+  
+  // Build point list [time, depth]
+  const pts = [];
+  let t = 0;
+  pts.push([t, 0]);
+  t += descentTime; pts.push([t, entry.profTable]);
+  t += foundTime; pts.push([t, entry.profTable]);
+  
+  // Ascent to paliers
+  const ascTime = Math.ceil((entry.profTable - firstPalDepth) / 15);
+  t += ascTime; pts.push([t, firstPalDepth]);
+  
+  const palStack = [
+    {d: 15, m: entry.pal15},
+    {d: 12, m: entry.pal12},
+    {d: 9, m: entry.pal9},
+    {d: 6, m: entry.pal6},
+    {d: 3, m: entry.pal3},
+  ].filter(p => p.m > 0);
+  
+  for (let i = 0; i < palStack.length; i++) {
+    const p = palStack[i];
+    t += p.m; pts.push([t, p.d]);
+    if (i + 1 < palStack.length) {
+      const nextDepth = palStack[i+1].d;
+      const moveTime = Math.ceil((p.d - nextDepth) / 6);
+      t += moveTime; pts.push([t, nextDepth]);
+    }
+  }
+  t += 2; pts.push([t, 0]);
+  
+  const maxT = t;
+  const maxD = entry.profTable;
+  
+  const tx = (time) => pad.left + (time / maxT) * cw;
+  const ty = (depth) => pad.top + (depth / maxD) * ch;
+  
+  // Draw depth axis
+  ctx.fillStyle = 'rgba(0,200,255,0.6)';
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.textAlign = 'right';
+  [0, Math.round(maxD/2), maxD].forEach(d => {
+    ctx.fillText(d + 'm', pad.left - 4, ty(d) + 3);
+  });
+  
+  // Time axis
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,200,255,0.5)';
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const tVal = Math.round((maxT / ticks) * i);
+    ctx.fillText(tVal + 'min', tx(tVal), 200 - pad.bottom + 14);
+  }
+  
+  // Profile path
+  ctx.beginPath();
+  ctx.moveTo(tx(pts[0][0]), ty(pts[0][1]));
+  for (let i = 1; i < pts.length; i++) {
+    ctx.lineTo(tx(pts[i][0]), ty(pts[i][1]));
+  }
+  
+  const profileGrad = ctx.createLinearGradient(0, pad.top, 0, 200 - pad.bottom);
+  profileGrad.addColorStop(0, 'rgba(0,200,255,0.25)');
+  profileGrad.addColorStop(1, 'rgba(0,200,255,0.02)');
+  
+  ctx.lineTo(tx(pts[pts.length-1][0]), ty(0));
+  ctx.lineTo(tx(pts[0][0]), ty(0));
+  ctx.closePath();
+  ctx.fillStyle = profileGrad;
+  ctx.fill();
+  
+  // Redraw stroke on top
+  ctx.beginPath();
+  ctx.moveTo(tx(pts[0][0]), ty(pts[0][1]));
+  for (let i = 1; i < pts.length; i++) {
+    ctx.lineTo(tx(pts[i][0]), ty(pts[i][1]));
+  }
+  ctx.strokeStyle = '#00c8ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Palier labels
+  palStack.forEach(p => {
+    if (p.m > 0) {
+      ctx.fillStyle = '#00ffc8';
+      ctx.font = 'bold 9px IBM Plex Mono, monospace';
+      ctx.textAlign = 'center';
+    }
+  });
+}
+
+// ===================== CALCUL SUCCESSIVES =====================
+function calcSucc() {
+  const p1_prof = parseInt(document.getElementById('s_p1_prof').value) || 0;
+  const p1_duree = parseInt(document.getElementById('s_p1_duree').value) || 0;
+  const p1_heure = document.getElementById('s_p1_heure').value || '09:00';
+  const p2_heure = document.getElementById('s_p2_heure').value || '14:00';
+  const p2_prof = parseInt(document.getElementById('s_p2_prof').value) || 0;
+  const p2_duree = parseInt(document.getElementById('s_p2_duree').value) || 0;
+  const p2_rapide = document.getElementById('s_p2_rapide').checked;
+
+  const intEl = document.getElementById('intervalle-info');
+  const resEl = document.getElementById('result-succ');
+  
+  if (!p1_prof || !p1_duree || !p2_prof || !p2_duree) { intEl.innerHTML = ''; resEl.innerHTML = ''; return; }
+  
+  // Calculer intervalle
+  const p1_entry = lookupEntry(p1_prof, p1_duree);
+  if (!p1_entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P1 dans la table.</div>'; return; }
+  
+  const sortieP1 = addMinutes(p1_heure, p1_entry.duree + p1_entry.dtr);
+  const intervalMin = intervalToMin(sortieP1, p2_heure);
+  const intervalLabel = intervalToLabel(intervalMin);
+  
+  // Type de plongée selon intervalle
+  let typeInfo = '';
+  if (intervalMin <= 15) {
+    typeInfo = `<div class="alert warn">⚡ Intervalle ≤ 15 min → <strong>Plongées CONSÉCUTIVES</strong> : additionner les durées et prendre la profondeur max.</div>`;
+  } else if (intervalMin > 12 * 60) {
+    typeInfo = `<div class="alert success">✅ Intervalle > 12 h → plongée P2 indépendante, calcul simple.</div>`;
+  } else {
+    typeInfo = `<div class="alert info">🔁 Intervalle ${intervalLabel} → <strong>Plongées SUCCESSIVES</strong></div>`;
+  }
+  
+  intEl.innerHTML = `<div class="result-row"><span class="result-label">Sortie P1</span><span class="result-value accent">${sortieP1}</span></div>
+  <div class="result-row"><span class="result-label">Intervalle surface</span><span class="result-value accent">${intervalLabel}</span></div>
+  ${typeInfo}`;
+  
+  if (intervalMin <= 15) {
+    // Consécutives
+    const profMax = Math.max(p1_prof, p2_prof);
+    const dureeTotal = p1_duree + intervalMin + p2_duree;
+    const entry = lookupEntry(profMax, dureeTotal);
+    if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
+    renderResult(resEl, entry, [
+      {label: 'Type', value: 'CONSÉCUTIVES'},
+      {label: 'Profondeur max', value: profMax + ' m'},
+      {label: 'Durée totale fictive', value: dureeTotal + ' min'}
+    ], null);
+    return;
+  }
+  
+  if (intervalMin > 12 * 60) {
+    // Indépendante
+    const entry = lookupEntry(p2_prof, p2_duree);
+    if (!entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P2 dans la table.</div>'; return; }
+    renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
+    return;
+  }
+  
+  // Successives
+  if (p1_entry.gps === '*') {
+    resEl.innerHTML = '<div class="alert danger">🚫 GPS ★ après P1 — plongées successives interdites !</div>';
+    return;
+  }
+  
+  const n2 = getN2(p1_entry.gps, intervalMin);
+  if (!n2) { resEl.innerHTML = '<div class="alert danger">Impossible de calculer l\'azote résiduel (Tableau I).</div>'; return; }
+  
+  const majoration = getMajoration(n2, p2_prof);
+  if (majoration === null || majoration === undefined) { resEl.innerHTML = '<div class="alert danger">Impossible de calculer la majoration (Tableau II).</div>'; return; }
+  
+  const dureeFictive = p2_duree + majoration;
+  const p2_entry = lookupEntry(p2_prof, dureeFictive);
+  if (!p2_entry) { resEl.innerHTML = '<div class="alert danger">Durée fictive hors table P2. Plongée trop profonde ou longue.</div>'; return; }
+  
+  const steps = [
+    {label: 'GPS P1', value: p1_entry.gps},
+    {label: 'Azote résiduel N₂', value: 'Tableau I : GPS ' + p1_entry.gps + ' × ' + intervalLabel + ' → N₂ = ' + n2},
+    {label: 'Majoration', value: 'Tableau II : N₂ ' + n2 + ' × ' + p2_entry.profTable + 'm → +' + majoration + ' min'},
+    {label: 'Durée réelle P2', value: p2_duree + ' min'},
+    {label: 'Durée fictive P2', value: dureeFictive + ' min (réelle + majoration)'},
+    {label: 'Lecture table P2', value: p2_entry.profTable + ' m / ' + p2_entry.duree + ' min'}
+  ];
+  
+  renderResult(resEl, p2_entry, steps, { n2, majoration, dureeFictive });
+}
+
+function renderResult(el, entry, steps, succInfo) {
+  let html = '';
+  
+  if (entry.gps === '*') {
+    html += `<div class="alert danger">🚫 GPS ★ — Plongées successives interdites !</div>`;
+  }
+  
+  if (steps) {
+    html += `<div class="card"><div class="card-title">Étapes de calcul</div><div class="steps-grid">`;
+    steps.forEach((s, i) => {
+      html += `<div class="step-item">
+        <div class="step-num">${i+1}</div>
+        <div class="step-content">
+          <div class="step-title">${s.label}</div>
+          <div class="step-value hl">${s.value}</div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+  
+  const paliers = [
+    {depth: '15 m', mins: entry.pal15},
+    {depth: '12 m', mins: entry.pal12},
+    {depth: '9 m', mins: entry.pal9},
+    {depth: '6 m', mins: entry.pal6},
+    {depth: '3 m', mins: entry.pal3},
+  ];
+  
+  html += `<div class="card">
+    <div class="card-title">Résultat P2 <span class="badge">${entry.profTable}m / ${entry.duree}min</span></div>
+    <div class="result-box">
+      <div class="result-row"><span class="result-label">Profondeur table</span><span class="result-value accent">${entry.profTable} m</span></div>
+      <div class="result-row"><span class="result-label">Durée fond table</span><span class="result-value accent">${entry.duree} min</span></div>
+      <div class="result-row"><span class="result-label">DTR</span><span class="result-value accent">${entry.dtr} min</span></div>
+      <div class="result-row"><span class="result-label">GPS P2</span><span class="result-value gps ${entry.gps === '*' ? 'star' : ''}">${entry.gps}</span></div>
+    </div>
+    <div class="section-sep">Paliers</div>
+    <div class="paliers-inline">`;
+  
+  paliers.forEach(p => {
+    html += `<div class="pal-chip">
+      <span class="depth">${p.depth}</span>
+      <span class="mins ${p.mins === 0 ? 'zero' : ''}">${p.mins}</span>
+      <span class="unit">min</span>
+    </div>`;
+  });
+  
+  html += `</div></div>`;
+  el.innerHTML = html;
+}
+
+// ===================== TABLES DISPLAY =====================
+function initTableSelect() {
+  const sel = document.getElementById('table_prof');
+  const depths = [...new Set(MN90_DATA.filter(r => r.prof >= 6).map(r => r.prof))].sort((a,b) => a-b);
+  sel.innerHTML = depths.map(d => `<option value="${d}">${d} m</option>`).join('');
+  sel.value = '25';
+  renderTable();
+}
+
+function renderTable() {
+  const prof = parseInt(document.getElementById('table_prof').value);
+  const rows = MN90_DATA.filter(r => r.prof === prof).sort((a,b) => a.duree - b.duree);
+  
+  let html = `<table class="mn90-table">
+    <tr>
+      <th>Prof.</th><th>Durée</th><th>15m</th><th>12m</th><th>9m</th><th>6m</th><th>3m</th><th>DTR</th><th>GPS</th>
+    </tr>`;
+  
+  rows.forEach(r => {
+    html += `<tr>
+      <td class="prof-cell">${r.prof}m</td>
+      <td>${r.duree}min</td>
+      <td class="${r.pal15 > 0 ? 'nonzero' : 'zero'}">${r.pal15 || '—'}</td>
+      <td class="${r.pal12 > 0 ? 'nonzero' : 'zero'}">${r.pal12 || '—'}</td>
+      <td class="${r.pal9 > 0 ? 'nonzero' : 'zero'}">${r.pal9 || '—'}</td>
+      <td class="${r.pal6 > 0 ? 'nonzero' : 'zero'}">${r.pal6 || '—'}</td>
+      <td class="${r.pal3 > 0 ? 'nonzero' : ''}">${r.pal3}</td>
+      <td>${r.dtr}</td>
+      <td class="gps-cell ${r.gps === '*' ? 'star' : ''}">${r.gps}</td>
+    </tr>`;
+  });
+  
+  html += '</table>';
+  document.getElementById('table-container').innerHTML = html;
+  renderTab1();
+  renderTab2();
+}
+
+function renderTab1() {
+  const intervals = TAB1.intervals;
+  const gpsKeys = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P'];
+  
+  let html = `<table class="mn90-table"><tr><th>GPS</th>`;
+  intervals.forEach(i => html += `<th>${i}</th>`);
+  html += '</tr>';
+  
+  gpsKeys.forEach(g => {
+    html += `<tr><td class="gps-cell">${g}</td>`;
+    TAB1.data[g].forEach(v => {
+      html += `<td>${v.toFixed(2)}</td>`;
+    });
+    html += '</tr>';
+  });
+  
+  html += '</table>';
+  document.getElementById('tab1-container').innerHTML = html;
+}
+
+function renderTab2() {
+  const profs = TAB2.profs;
+  const n2Keys = Object.keys(TAB2.data).sort((a,b) => parseFloat(a) - parseFloat(b));
+  
+  let html = `<table class="mn90-table"><tr><th>N₂ \\ Prof</th>`;
+  profs.forEach(p => html += `<th>${p}m</th>`);
+  html += '</tr>';
+  
+  n2Keys.forEach(k => {
+    html += `<tr><td style="color:var(--accent);font-weight:600">${k}</td>`;
+    TAB2.data[k].forEach(v => {
+      html += `<td>${v}</td>`;
+    });
+    html += '</tr>';
+  });
+  
+  html += '</table>';
+  document.getElementById('tab2-container').innerHTML = html;
+}
+
+// ===================== TABS =====================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['calcul', 'successives', 'tableaux', 'methode'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  
+  if (name === 'tableaux') initTableSelect();
+}
+
+// ===================== INIT =====================
+calcSimple();
+</script>
+</body>
+</html>

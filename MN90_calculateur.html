@@ -537,6 +537,7 @@ footer {
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div id="result-simple-inline" style="margin-top:14px"></div>
     </div>
 
     <div id="result-simple"></div>
@@ -564,10 +565,12 @@ footer {
           <input type="time" id="s_p1_heure" value="09:00" oninput="calcSucc()">
         </div>
       </div>
+      <div id="result-p1-inline" style="margin-top:14px"></div>
     </div>
 
     <div class="card">
       <div class="card-title">⏱ Intervalle surface</div>
+      <div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:10px">L'intervalle est calculé entre la <strong>sortie de l'eau après P1</strong> (fin DTR) et l'<strong>immersion de P2</strong>.</div>
       <div class="form-grid">
         <div class="field">
           <label>Heure d'immersion P2</label>
@@ -600,6 +603,7 @@ footer {
           <span class="toggle-slider"></span>
         </label>
       </div>
+      <div id="result-p2-inline" style="margin-top:14px"></div>
     </div>
 
     <div id="result-succ"></div>
@@ -822,6 +826,56 @@ function getMajoration(n2, prof) {
   return TAB2.data[String(keyFound)][profIdx];
 }
 
+// ===================== HELPER RÉSULTAT INLINE =====================
+function renderInline(targetId, entry, heure, extraInfo) {
+  const el = document.getElementById(targetId);
+  if (!el || !entry) return;
+  const paliers = [
+    {d:'15m', m: entry.pal15}, {d:'12m', m: entry.pal12},
+    {d:'9m',  m: entry.pal9},  {d:'6m',  m: entry.pal6},
+    {d:'3m',  m: entry.pal3},
+  ];
+  const hasPaliers = paliers.some(p => p.m > 0);
+  const sortie = heure ? addMinutes(heure, entry.duree + entry.dtr) : null;
+
+  let html = `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">`;
+
+  // Extra info (majoration etc.)
+  if (extraInfo) html += `<div style="font-size:0.78rem;color:var(--text-dim);margin-bottom:8px">${extraInfo}</div>`;
+
+  // Paliers chips + GPS sur la même ligne
+  html += `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px">`;
+  if (hasPaliers) {
+    paliers.forEach(p => {
+      const zero = p.m === 0;
+      html += `<div style="display:flex;flex-direction:column;align-items:center;background:${zero?'var(--panel2)':'#fff3e0'};border:1px solid ${zero?'var(--border)':'#e65100'};border-radius:6px;padding:4px 8px;min-width:44px">
+        <span style="font-size:0.65rem;font-weight:700;color:${zero?'var(--text-dim)':'#e65100'}">${p.d}</span>
+        <span style="font-size:1rem;font-weight:700;color:${zero?'var(--text-dim)':'#bf360c'};line-height:1.1">${p.m}</span>
+        <span style="font-size:0.6rem;color:var(--text-dim)">min</span>
+      </div>`;
+    });
+  } else {
+    html += `<span style="font-size:0.82rem;color:var(--teal);font-weight:600">Aucun palier</span>`;
+  }
+  // GPS badge
+  const gpsColor = entry.gps === '*' ? '#b71c1c' : '#00695c';
+  const gpsBg = entry.gps === '*' ? '#ffebee' : '#e8f5e9';
+  html += `<div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;background:${gpsBg};border:2px solid ${gpsColor};border-radius:8px;padding:4px 12px;min-width:52px">
+    <span style="font-size:0.62rem;font-weight:700;color:${gpsColor};text-transform:uppercase">GPS</span>
+    <span style="font-size:1.4rem;font-weight:700;color:${gpsColor};line-height:1.1">${entry.gps}</span>
+  </div>`;
+  html += `</div>`;
+
+  // DTR + heure sortie
+  html += `<div style="display:flex;gap:16px;font-size:0.8rem;color:var(--text-mid)">`;
+  html += `<span>⏱ DTR : <strong>${entry.dtr} min</strong></span>`;
+  if (sortie) html += `<span>🕐 Sortie : <strong>${sortie}</strong></span>`;
+  html += `</div>`;
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
 // ===================== CALCUL SIMPLE =====================
 function calcSimple() {
   const prof = parseInt(document.getElementById('p1_prof').value) || 0;
@@ -917,149 +971,17 @@ function calcSimple() {
   
   html += `</div></div>`;
   
-  // Dessin du profil
-  html += `<div class="card profile-container">
-    <div class="card-title">Profil de plongée</div>
-    <canvas id="profileCanvas"></canvas>
-  </div>`;
-  
   el.innerHTML = html;
   
+  // Résultat inline (paliers + GPS directement sous les données)
+  renderInline('result-simple-inline', entry, heure, null);
+
   // Update shared graph data
   const profRemFinal = (profRem && profRem <= prof) ? profRem : prof;
   window.graphData = {
     type: 'simple',
     p1: { ...entry, heure, profRem: profRemFinal }
   };
-  
-  // Draw profile (legacy small canvas in calcul tab)
-  setTimeout(() => drawProfile(entry, heure), 50);
-}
-
-function drawProfile(entry, heure) {
-  const canvas = document.getElementById('profileCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.offsetWidth; canvas.width = W; canvas.height = 200;
-  
-  const pad = { top: 20, right: 20, bottom: 35, left: 40 };
-  const cw = W - pad.left - pad.right;
-  const ch = 200 - pad.top - pad.bottom;
-  
-  ctx.clearRect(0, 0, W, 200);
-  
-  // Background
-  const grad = ctx.createLinearGradient(0, pad.top, 0, 200 - pad.bottom);
-  grad.addColorStop(0, 'rgba(21,101,192,0.10)');
-  grad.addColorStop(1, 'rgba(21,101,192,0.02)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(pad.left, pad.top, cw, ch);
-  
-  // Grid lines
-  ctx.strokeStyle = 'rgba(21,101,192,0.15)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (ch / 4) * i;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
-  }
-  
-  // Build timeline
-  // Descent (1.5min per 10m approx, simplified)
-  const descentRate = 15; // m/min
-  const descentTime = Math.ceil(entry.profTable / descentRate);
-  const foundTime = entry.duree;
-  
-  // Ascent to first stop (simplified 15m/min)
-  const firstPalDepth = entry.pal15 > 0 ? 15 : entry.pal12 > 0 ? 12 : entry.pal9 > 0 ? 9 : entry.pal6 > 0 ? 6 : 3;
-  
-  // Build point list [time, depth]
-  const pts = [];
-  let t = 0;
-  pts.push([t, 0]);
-  t += descentTime; pts.push([t, entry.profTable]);
-  t += foundTime; pts.push([t, entry.profTable]);
-  
-  // Ascent to paliers
-  const ascTime = Math.ceil((entry.profTable - firstPalDepth) / 15);
-  t += ascTime; pts.push([t, firstPalDepth]);
-  
-  const palStack = [
-    {d: 15, m: entry.pal15},
-    {d: 12, m: entry.pal12},
-    {d: 9, m: entry.pal9},
-    {d: 6, m: entry.pal6},
-    {d: 3, m: entry.pal3},
-  ].filter(p => p.m > 0);
-  
-  for (let i = 0; i < palStack.length; i++) {
-    const p = palStack[i];
-    t += p.m; pts.push([t, p.d]);
-    if (i + 1 < palStack.length) {
-      const nextDepth = palStack[i+1].d;
-      const moveTime = Math.ceil((p.d - nextDepth) / 6);
-      t += moveTime; pts.push([t, nextDepth]);
-    }
-  }
-  t += 2; pts.push([t, 0]);
-  
-  const maxT = t;
-  const maxD = entry.profTable;
-  
-  const tx = (time) => pad.left + (time / maxT) * cw;
-  const ty = (depth) => pad.top + (depth / maxD) * ch;
-  
-  // Draw depth axis
-  ctx.fillStyle = '#1565c0';
-  ctx.font = '10px IBM Plex Mono, monospace';
-  ctx.textAlign = 'right';
-  [0, Math.round(maxD/2), maxD].forEach(d => {
-    ctx.fillText(d + 'm', pad.left - 4, ty(d) + 3);
-  });
-  
-  // Time axis
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#6b8499';
-  const ticks = 4;
-  for (let i = 0; i <= ticks; i++) {
-    const tVal = Math.round((maxT / ticks) * i);
-    ctx.fillText(tVal + 'min', tx(tVal), 200 - pad.bottom + 14);
-  }
-  
-  // Profile path
-  ctx.beginPath();
-  ctx.moveTo(tx(pts[0][0]), ty(pts[0][1]));
-  for (let i = 1; i < pts.length; i++) {
-    ctx.lineTo(tx(pts[i][0]), ty(pts[i][1]));
-  }
-  
-  const profileGrad = ctx.createLinearGradient(0, pad.top, 0, 200 - pad.bottom);
-  profileGrad.addColorStop(0, 'rgba(21,101,192,0.22)');
-  profileGrad.addColorStop(1, 'rgba(21,101,192,0.04)');
-  
-  ctx.lineTo(tx(pts[pts.length-1][0]), ty(0));
-  ctx.lineTo(tx(pts[0][0]), ty(0));
-  ctx.closePath();
-  ctx.fillStyle = profileGrad;
-  ctx.fill();
-  
-  // Redraw stroke on top
-  ctx.beginPath();
-  ctx.moveTo(tx(pts[0][0]), ty(pts[0][1]));
-  for (let i = 1; i < pts.length; i++) {
-    ctx.lineTo(tx(pts[i][0]), ty(pts[i][1]));
-  }
-  ctx.strokeStyle = '#1565c0';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  
-  // Palier labels
-  palStack.forEach(p => {
-    if (p.m > 0) {
-      ctx.fillStyle = '#00ffc8';
-      ctx.font = 'bold 9px IBM Plex Mono, monospace';
-      ctx.textAlign = 'center';
-    }
-  });
 }
 
 // ===================== CALCUL SUCCESSIVES =====================
@@ -1085,23 +1007,35 @@ function calcSucc() {
   const p1_entry = lookupEntry(p1_prof, p1_duree);
   if (!p1_entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P1 dans la table.</div>'; return; }
   
+  // Résultat P1 inline
+  renderInline('result-p1-inline', p1_entry, p1_heure, null);
+
   const sortieP1 = addMinutes(p1_heure, p1_entry.duree + p1_entry.dtr);
   const intervalMin = intervalToMin(sortieP1, p2_heure);
   const intervalLabel = intervalToLabel(intervalMin);
   
   // Type de plongée selon intervalle
-  let typeInfo = '';
+  let typeBadge = '';
   if (intervalMin <= 15) {
-    typeInfo = `<div class="alert warn">⚡ Intervalle ≤ 15 min → <strong>Plongées CONSÉCUTIVES</strong> : additionner les durées et prendre la profondeur max.</div>`;
+    typeBadge = `<div style="margin-top:8px;padding:8px 12px;background:#fff3e0;border-left:3px solid #e65100;border-radius:4px;font-size:0.82rem">
+      ⚡ <strong style="color:#e65100">CONSÉCUTIVES</strong> — intervalle ≤ 15 min : additionner les durées, prendre la profondeur max.
+    </div>`;
   } else if (intervalMin > 12 * 60) {
-    typeInfo = `<div class="alert success">✅ Intervalle > 12 h → plongée P2 indépendante, calcul simple.</div>`;
+    typeBadge = `<div style="margin-top:8px;padding:8px 12px;background:#e8f5e9;border-left:3px solid #2e7d32;border-radius:4px;font-size:0.82rem">
+      ✅ <strong style="color:#2e7d32">INDÉPENDANTE</strong> — intervalle > 12 h : P2 calculée comme une plongée simple.
+    </div>`;
   } else {
-    typeInfo = `<div class="alert info">🔁 Intervalle ${intervalLabel} → <strong>Plongées SUCCESSIVES</strong></div>`;
+    typeBadge = `<div style="margin-top:8px;padding:8px 12px;background:#e3f2fd;border-left:3px solid #0d47a1;border-radius:4px;font-size:0.82rem">
+      🔁 <strong style="color:#0d47a1">SUCCESSIVES</strong> — majoration appliquée via Tableau I → Tableau II.
+    </div>`;
   }
-  
-  intEl.innerHTML = `<div class="result-row"><span class="result-label">Sortie P1</span><span class="result-value accent">${sortieP1}</span></div>
-  <div class="result-row"><span class="result-label">Intervalle surface</span><span class="result-value accent">${intervalLabel}</span></div>
-  ${typeInfo}`;
+
+  intEl.innerHTML = `
+    <div style="display:flex;gap:16px;font-size:0.82rem;flex-wrap:wrap">
+      <span>🕐 Sortie P1 : <strong>${sortieP1}</strong></span>
+      <span>⏱ Intervalle : <strong>${intervalLabel}</strong></span>
+    </div>
+    ${typeBadge}`;
   
   if (intervalMin <= 15) {
     // Consécutives
@@ -1112,6 +1046,7 @@ function calcSucc() {
     const p1RemC = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
     const p2RemC = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
     window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemC }, p2: { ...entry, profRem: p2RemC }, intervalMin, typeLabel: 'Consécutives' };
+    renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`);
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
       {label: 'Profondeur max', value: profMax + ' m'},
@@ -1127,6 +1062,7 @@ function calcSucc() {
     const p1RemI = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
     const p2RemI = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
     window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemI }, p2: { ...entry, profRem: p2RemI }, intervalMin, typeLabel: 'Indépendante' };
+    renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)');
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     return;
   }
@@ -1134,6 +1070,7 @@ function calcSucc() {
   // Successives
   if (p1_entry.gps === '*') {
     resEl.innerHTML = '<div class="alert danger">🚫 GPS ★ après P1 — plongées successives interdites !</div>';
+    document.getElementById('result-p2-inline').innerHTML = '';
     return;
   }
   
@@ -1151,6 +1088,8 @@ function calcSucc() {
   const p2RemS = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
   window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS }, p2: { ...p2_entry, profRem: p2RemS }, intervalMin, majoration, typeLabel: 'Successives' };
   
+  renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`);
+
   const steps = [
     {label: 'GPS P1', value: p1_entry.gps},
     {label: 'Azote résiduel N₂', value: 'Tableau I : GPS ' + p1_entry.gps + ' × ' + intervalLabel + ' → N₂ = ' + n2},
@@ -1328,12 +1267,12 @@ function drawMainGraph() {
   
   const gd = window.graphData;
   const W = canvas.offsetWidth || 700;
-  const H = 320;
+  const H = 360;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   
-  const pad = { top: 30, right: 24, bottom: 50, left: 52 };
+  const pad = { top: 60, right: 24, bottom: 55, left: 52 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
   
@@ -1626,16 +1565,25 @@ function drawMainGraph() {
     }
   });
   
-  // Vitesse remontée entre paliers
+  // Vitesse remontée entre paliers - positionner sur le segment de remontée inter-paliers
   if (p1data.paliers.length > 1) {
-    const midPalX = tx(p1Pts[p1Pts.length - 3]?.t || maxTime * 0.8);
-    const midPalY = ty(p1.profTable / 2);
-    annotate(midPalX, midPalY, '6m/min', C.speed, 'center', 0, 0);
+    // Trouver deux paliers consécutifs pour positionner le label sur le segment entre eux
+    const pal0 = p1data.paliers[0];
+    const pal1 = p1data.paliers[1];
+    const pts0 = p1Pts.filter(p => p.d === pal0.d);
+    const pts1 = p1Pts.filter(p => p.d === pal1.d);
+    if (pts0.length && pts1.length) {
+      const segStartT = pts0[pts0.length - 1].t; // fin du palier 0
+      const segEndT = pts1[0].t;                  // début du palier 1
+      const segX = tx((segStartT + segEndT) / 2);
+      const segY = ty((pal0.d + pal1.d) / 2);
+      annotate(segX, segY, '6m/min', C.speed, 'center', 0, -8);
+    }
   }
   
   // GPS label P1
   const endP1X = tx(p1Pts[p1Pts.length - 1].t);
-  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', 0, -14);
+  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
   
   // DTR P1
   const dtrStartX = tx(p1Pts[2].t);
@@ -1657,9 +1605,9 @@ function drawMainGraph() {
   if (p1.heure) {
     const immerX = tx(p1Pts[0].t);
     const sortieX = tx(p1Pts[p1Pts.length - 1].t);
-    annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -26);
+    annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -42);
     const sortieH = addMinutes(p1.heure, p1Pts[p1Pts.length - 1].t);
-    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', 0, -26);
+    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', 0, -42);
   }
   
   // --- P2 annotations ---
@@ -1683,7 +1631,30 @@ function drawMainGraph() {
     ctx.stroke();
     ctx.setLineDash([]);
     const intLabel = intervalToLabel(gd.intervalMin);
-    annotate((surfStartX + surfEndX) / 2, pad.top + ch / 2, `Intervalle: ${intLabel}`, C.surface, 'center', 0, 0);
+    const intMins = gd.intervalMin;
+    const intTypeShort = intMins <= 15 ? 'Consécutives' : intMins > 720 ? 'Indépendante' : 'Successives';
+    const bandW = surfEndX - surfStartX;
+    const bandMidX = (surfStartX + surfEndX) / 2;
+    const bandMidY = pad.top + ch / 2;
+    // Afficher sur deux lignes si la bande est assez large, sinon une ligne
+    if (bandW > 90) {
+      annotate(bandMidX, bandMidY - 10, `⏱ ${intLabel}`, C.surface, 'center', 0, 0);
+      annotate(bandMidX, bandMidY + 8, `(${intMins} min)`, C.surface, 'center', 0, 0);
+      annotate(bandMidX, bandMidY + 26, intTypeShort, C.surface, 'center', 0, 0);
+    } else {
+      annotate(bandMidX, bandMidY, `${intLabel}`, C.surface, 'center', 0, 0);
+    }
+    // Accolade horizontale pour matérialiser l'intervalle
+    ctx.strokeStyle = C.surface;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(surfStartX + 2, pad.top + ch + 12);
+    ctx.lineTo(surfEndX - 2, pad.top + ch + 12);
+    ctx.moveTo(surfStartX + 2, pad.top + ch + 8);
+    ctx.lineTo(surfStartX + 2, pad.top + ch + 16);
+    ctx.moveTo(surfEndX - 2, pad.top + ch + 8);
+    ctx.lineTo(surfEndX - 2, pad.top + ch + 16);
+    ctx.stroke();
     
     // P2 depth
     ctx.strokeStyle = C.p2line;
@@ -1753,7 +1724,7 @@ function drawMainGraph() {
     
     // GPS P2
     const endP2X = tx(p2Pts[p2Pts.length - 1].t);
-    annotate(endP2X, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -14);
+    annotate(endP2X, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
     
     // DTR P2
     const dtr2StartX = tx(p2Pts[2].t);
@@ -1772,7 +1743,7 @@ function drawMainGraph() {
   }
   
   // --- Legend / params table ---
-  const p1 = gd.p1;
+  const p1leg = gd.p1;
   let legendHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
   
   legendHtml += `<div style="background:var(--panel2);border-left:3px solid #0d47a1;border-radius:6px;padding:10px 14px">
@@ -1780,12 +1751,12 @@ function drawMainGraph() {
       🤿 Plongée 1
     </div>
     <div style="font-size:0.82rem;line-height:1.8">
-      Prof. table : <strong>${p1.profTable} m</strong><br>
-      Durée fond : <strong>${p1.duree} min</strong><br>
-      Paliers : <strong>${formatPaliers(p1)}</strong><br>
-      DTR : <strong>${p1.dtr} min</strong><br>
-      GPS : <strong style="color:${p1.gps==='*'?'#b71c1c':'#00695c'}">${p1.gps}</strong><br>
-      ${p1.heure ? `Immersion : <strong>${p1.heure}</strong><br>Sortie : <strong>${addMinutes(p1.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
+      Prof. table : <strong>${p1leg.profTable} m</strong><br>
+      Durée fond : <strong>${p1leg.duree} min</strong><br>
+      Paliers : <strong>${formatPaliers(p1leg)}</strong><br>
+      DTR : <strong>${p1leg.dtr} min</strong><br>
+      GPS : <strong style="color:${p1leg.gps==='*'?'#b71c1c':'#00695c'}">${p1leg.gps}</strong><br>
+      ${p1leg.heure ? `Immersion : <strong>${p1leg.heure}</strong><br>Sortie : <strong>${addMinutes(p1leg.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
     </div>
   </div>`;
   

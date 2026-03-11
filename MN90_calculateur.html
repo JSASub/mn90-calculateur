@@ -7,24 +7,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #eef1f5;
-  --bg2: #e3e8ef;
+  --bg: #d8e0ea;
+  --bg2: #c8d4e0;
   --panel: #ffffff;
-  --panel2: #f5f7fa;
-  --navy: #1a3a5c;
-  --navy-light: #2a5080;
-  --accent: #1565c0;
-  --accent2: #0077b6;
-  --teal: #00897b;
-  --warn: #e65100;
-  --danger: #c62828;
-  --gps-star: #c62828;
-  --success: #2e7d32;
-  --text: #1a2733;
-  --text-mid: #3a5068;
-  --text-dim: #6b8499;
-  --border: #c8d6e5;
-  --border-strong: #a0b8cc;
+  --panel2: #eaeff5;
+  --navy: #0d2540;
+  --navy-light: #1a3a5c;
+  --accent: #0d47a1;
+  --accent2: #005b8a;
+  --teal: #00695c;
+  --warn: #bf360c;
+  --danger: #b71c1c;
+  --gps-star: #b71c1c;
+  --success: #1b5e20;
+  --text: #080f18;
+  --text-mid: #18304a;
+  --text-dim: #2d4d65;
+  --border: #9ab0c5;
+  --border-strong: #6a8fa8;
   --mono: 'IBM Plex Mono', monospace;
   --sans: 'IBM Plex Sans', sans-serif;
   --display: 'Bebas Neue', sans-serif;
@@ -501,8 +501,9 @@ footer {
   </header>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('calcul')">⚙ Calculateur</button>
-    <button class="tab" onclick="switchTab('successives')">🔁 Successives</button>
+    <button class="tab active" onclick="switchTab('calcul')">🤿 Plongée simple</button>
+    <button class="tab" onclick="switchTab('successives')">🔁 2 Plongées</button>
+    <button class="tab" onclick="switchTab('graphique')">📈 Graphique</button>
     <button class="tab" onclick="switchTab('tableaux')">📋 Tables</button>
     <button class="tab" onclick="switchTab('methode')">📖 Méthode</button>
   </div>
@@ -513,7 +514,7 @@ footer {
       <div class="card-title">▶ Plongée <span class="badge">P1</span></div>
       <div class="form-grid">
         <div class="field">
-          <label>Profondeur réelle (m)</label>
+          <label>Profondeur max réelle (m)</label>
           <input type="number" id="p1_prof" min="1" max="65" step="1" value="25" oninput="calcSimple()">
         </div>
         <div class="field">
@@ -521,12 +522,16 @@ footer {
           <input type="number" id="p1_duree" min="1" max="360" step="1" value="30" oninput="calcSimple()">
         </div>
         <div class="field">
+          <label>Profondeur début remontée (m)</label>
+          <input type="number" id="p1_prof_rem" min="1" max="65" step="1" placeholder="= prof. max si vide" oninput="calcSimple()">
+        </div>
+        <div class="field">
           <label>Heure d'immersion</label>
           <input type="time" id="p1_heure" value="09:00" oninput="calcSimple()">
         </div>
       </div>
       <div class="toggle-row" style="margin-top:10px">
-        <span class="toggle-label">⚡ Remontée rapide (&gt;17 m/min)</span>
+        <span class="toggle-label">⚡ Remontée rapide (&gt;17 m/min fond→palier)</span>
         <label class="toggle">
           <input type="checkbox" id="p1_rapide" onchange="calcSimple()">
           <span class="toggle-slider"></span>
@@ -543,12 +548,16 @@ footer {
       <div class="card-title">▶ Plongée 1 <span class="badge">P1</span></div>
       <div class="form-grid">
         <div class="field">
-          <label>Profondeur (m)</label>
+          <label>Profondeur max réelle (m)</label>
           <input type="number" id="s_p1_prof" min="1" max="65" step="1" value="25" oninput="calcSucc()">
         </div>
         <div class="field">
           <label>Durée de fond (min)</label>
           <input type="number" id="s_p1_duree" min="1" max="360" step="1" value="30" oninput="calcSucc()">
+        </div>
+        <div class="field">
+          <label>Profondeur début remontée P1 (m)</label>
+          <input type="number" id="s_p1_prof_rem" min="1" max="65" step="1" placeholder="= prof. max si vide" oninput="calcSucc()">
         </div>
         <div class="field">
           <label>Heure d'immersion P1</label>
@@ -561,7 +570,7 @@ footer {
       <div class="card-title">⏱ Intervalle surface</div>
       <div class="form-grid">
         <div class="field">
-          <label>Heure de plongée P2</label>
+          <label>Heure d'immersion P2</label>
           <input type="time" id="s_p2_heure" value="14:00" oninput="calcSucc()">
         </div>
       </div>
@@ -572,16 +581,20 @@ footer {
       <div class="card-title">▶ Plongée 2 <span class="badge">P2</span></div>
       <div class="form-grid">
         <div class="field">
-          <label>Profondeur (m)</label>
+          <label>Profondeur max réelle (m)</label>
           <input type="number" id="s_p2_prof" min="1" max="65" step="1" value="20" oninput="calcSucc()">
         </div>
         <div class="field">
           <label>Durée de fond réelle (min)</label>
           <input type="number" id="s_p2_duree" min="1" max="360" step="1" value="30" oninput="calcSucc()">
         </div>
+        <div class="field">
+          <label>Profondeur début remontée P2 (m)</label>
+          <input type="number" id="s_p2_prof_rem" min="1" max="65" step="1" placeholder="= prof. max si vide" oninput="calcSucc()">
+        </div>
       </div>
       <div class="toggle-row" style="margin-top:10px">
-        <span class="toggle-label">⚡ Remontée rapide P2</span>
+        <span class="toggle-label">⚡ Remontée rapide P2 (&gt;17 m/min fond→palier)</span>
         <label class="toggle">
           <input type="checkbox" id="s_p2_rapide" onchange="calcSucc()">
           <span class="toggle-slider"></span>
@@ -611,6 +624,19 @@ footer {
     <div class="card" style="margin-top:16px">
       <div class="card-title">Tableau II — Majoration (min)</div>
       <div class="table-scroll" id="tab2-container"></div>
+    </div>
+  </div>
+
+  <!-- ======================== PANEL GRAPHIQUE ======================== -->
+  <div id="panel-graphique" class="panel">
+    <div class="card">
+      <div class="card-title">📈 Profil de plongée <span id="graph-subtitle" class="badge">—</span></div>
+      <div id="graph-no-data" class="alert info" style="margin-top:0">Saisissez d'abord une plongée dans l'onglet <strong>Plongée simple</strong> ou <strong>2 Plongées</strong>.</div>
+      <canvas id="mainCanvas" style="width:100%;border-radius:8px;background:#e8f4fd;border:1px solid var(--border);display:none"></canvas>
+    </div>
+    <div class="card" id="graph-legend" style="display:none">
+      <div class="card-title">Légende & paramètres</div>
+      <div id="graph-legend-content"></div>
     </div>
   </div>
 
@@ -802,6 +828,8 @@ function calcSimple() {
   const duree = parseInt(document.getElementById('p1_duree').value) || 0;
   const heure = document.getElementById('p1_heure').value || '09:00';
   const rapide = document.getElementById('p1_rapide').checked;
+  const profRemInput = document.getElementById('p1_prof_rem').value;
+  const profRem = profRemInput ? parseInt(profRemInput) : prof; // si vide = prof max
   
   const el = document.getElementById('result-simple');
   if (!prof || !duree) { el.innerHTML = ''; return; }
@@ -822,6 +850,15 @@ function calcSimple() {
   // Alerte remontée rapide
   if (rapide) {
     html += `<div class="alert warn">⚡ Remontée rapide détectée — Application de la procédure IPA I-4.4 (palier demi-profondeur 5 min + 6m 1 min + 3m 5 min).</div>`;
+  }
+  
+  // Info profondeur remontée si différente de prof max
+  if (profRem !== prof) {
+    if (profRem > prof) {
+      html += `<div class="alert warn">⚠ Profondeur de remontée (${profRem}m) supérieure à la profondeur max (${prof}m) — valeur ignorée, on utilise ${prof}m.</div>`;
+    } else {
+      html += `<div class="alert info">↗ Début de remontée depuis ${profRem}m (profondeur max : ${prof}m)</div>`;
+    }
   }
   
   // Correction si profondeur table > profondeur réelle
@@ -888,7 +925,14 @@ function calcSimple() {
   
   el.innerHTML = html;
   
-  // Draw profile
+  // Update shared graph data
+  const profRemFinal = (profRem && profRem <= prof) ? profRem : prof;
+  window.graphData = {
+    type: 'simple',
+    p1: { ...entry, heure, profRem: profRemFinal }
+  };
+  
+  // Draw profile (legacy small canvas in calcul tab)
   setTimeout(() => drawProfile(entry, heure), 50);
 }
 
@@ -1027,6 +1071,10 @@ function calcSucc() {
   const p2_prof = parseInt(document.getElementById('s_p2_prof').value) || 0;
   const p2_duree = parseInt(document.getElementById('s_p2_duree').value) || 0;
   const p2_rapide = document.getElementById('s_p2_rapide').checked;
+  const p1_profRemInput = document.getElementById('s_p1_prof_rem').value;
+  const p2_profRemInput = document.getElementById('s_p2_prof_rem').value;
+  const p1_profRem = p1_profRemInput ? parseInt(p1_profRemInput) : p1_prof;
+  const p2_profRem = p2_profRemInput ? parseInt(p2_profRemInput) : p2_prof;
 
   const intEl = document.getElementById('intervalle-info');
   const resEl = document.getElementById('result-succ');
@@ -1061,6 +1109,9 @@ function calcSucc() {
     const dureeTotal = p1_duree + intervalMin + p2_duree;
     const entry = lookupEntry(profMax, dureeTotal);
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
+    const p1RemC = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
+    const p2RemC = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
+    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemC }, p2: { ...entry, profRem: p2RemC }, intervalMin, typeLabel: 'Consécutives' };
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
       {label: 'Profondeur max', value: profMax + ' m'},
@@ -1073,6 +1124,9 @@ function calcSucc() {
     // Indépendante
     const entry = lookupEntry(p2_prof, p2_duree);
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P2 dans la table.</div>'; return; }
+    const p1RemI = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
+    const p2RemI = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
+    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemI }, p2: { ...entry, profRem: p2RemI }, intervalMin, typeLabel: 'Indépendante' };
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     return;
   }
@@ -1092,6 +1146,10 @@ function calcSucc() {
   const dureeFictive = p2_duree + majoration;
   const p2_entry = lookupEntry(p2_prof, dureeFictive);
   if (!p2_entry) { resEl.innerHTML = '<div class="alert danger">Durée fictive hors table P2. Plongée trop profonde ou longue.</div>'; return; }
+  
+  const p1RemS = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
+  const p2RemS = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
+  window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS }, p2: { ...p2_entry, profRem: p2RemS }, intervalMin, majoration, typeLabel: 'Successives' };
   
   const steps = [
     {label: 'GPS P1', value: p1_entry.gps},
@@ -1238,13 +1296,541 @@ function renderTab2() {
 // ===================== TABS =====================
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const names = ['calcul', 'successives', 'tableaux', 'methode'];
+    const names = ['calcul', 'successives', 'graphique', 'tableaux', 'methode'];
     t.classList.toggle('active', names[i] === name);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   
   if (name === 'tableaux') initTableSelect();
+  if (name === 'graphique') drawMainGraph();
+}
+
+// ===================== GRAPHIQUE PRINCIPAL =====================
+// Shared state : populated by calcSimple() and calcSucc()
+window.graphData = null;
+
+function drawMainGraph() {
+  const canvas = document.getElementById('mainCanvas');
+  const noData = document.getElementById('graph-no-data');
+  const legend = document.getElementById('graph-legend');
+  
+  if (!window.graphData) {
+    noData.style.display = 'flex';
+    canvas.style.display = 'none';
+    legend.style.display = 'none';
+    return;
+  }
+  
+  noData.style.display = 'none';
+  canvas.style.display = 'block';
+  legend.style.display = 'block';
+  
+  const gd = window.graphData;
+  const W = canvas.offsetWidth || 700;
+  const H = 320;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  
+  const pad = { top: 30, right: 24, bottom: 50, left: 52 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+  
+  ctx.clearRect(0, 0, W, H);
+  
+  // Colors
+  const C = {
+    bg: '#e8f4fd',
+    grid: 'rgba(21,101,192,0.12)',
+    axis: '#18304a',
+    p1line: '#0d47a1',
+    p1fill: 'rgba(13,71,161,0.15)',
+    p2line: '#00695c',
+    p2fill: 'rgba(0,105,92,0.13)',
+    palier: '#bf360c',
+    palierFill: 'rgba(191,54,12,0.13)',
+    surface: '#6a8fa8',
+    label: '#0a1520',
+    labelBg: 'rgba(255,255,255,0.88)',
+    gps: '#00695c',
+    warn: '#bf360c',
+    hour: '#1a3a5c',
+    speed: '#7b1fa2',
+    dtr: '#e65100',
+  };
+  
+  // Build timeline from graphData
+  // graphData = { type: 'simple'|'double', p1, p2 (optional), intervalMin }
+  // Each plongee: { profTable, duree, pal15,pal12,pal9,pal6,pal3, dtr, gps, heure }
+  
+  const segments = []; // {x0, x1, y0, y1, type, label}
+  const annotations = []; // {x, y, text, color, align, valign}
+  
+  let totalMin = 0;
+  
+  function buildProfilePts(entry, startMin) {
+    const pts = [];
+    const descentTime = Math.ceil(entry.profTable / 15);
+    
+    pts.push({ t: startMin, d: 0 });
+    pts.push({ t: startMin + descentTime, d: entry.profTable });
+    pts.push({ t: startMin + descentTime + entry.duree, d: entry.profTable });
+    
+    // Profondeur de début de remontée (peut être < profTable si remontée depuis moins profond)
+    const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
+    
+    // Ascent paliers
+    const paliers = [
+      { d: 15, m: entry.pal15 },
+      { d: 12, m: entry.pal12 },
+      { d: 9, m: entry.pal9 },
+      { d: 6, m: entry.pal6 },
+      { d: 3, m: entry.pal3 },
+    ].filter(p => p.m > 0);
+    
+    let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
+    // Si remontée depuis une profondeur intermédiaire, ajouter ce point
+    let cur = startMin + descentTime + entry.duree;
+    if (remDepth < entry.profTable) {
+      const toRemDepthTime = Math.ceil((entry.profTable - remDepth) / 15);
+      cur += toRemDepthTime;
+      pts.push({ t: cur, d: remDepth, isRemStart: true });
+    }
+    const ascentTime = Math.ceil((remDepth - firstPalDepth) / 15);
+    cur += ascentTime;
+    pts.push({ t: cur, d: firstPalDepth });
+    
+    for (let i = 0; i < paliers.length; i++) {
+      cur += paliers[i].m;
+      pts.push({ t: cur, d: paliers[i].d });
+      if (i + 1 < paliers.length) {
+        const moveT = Math.ceil((paliers[i].d - paliers[i + 1].d) / 6);
+        cur += moveT;
+        pts.push({ t: cur, d: paliers[i + 1].d });
+      }
+    }
+    // final ascent to surface
+    cur += Math.ceil((paliers.length > 0 ? paliers[paliers.length - 1].d : 3) / 6);
+    pts.push({ t: cur, d: 0 });
+    
+    return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
+  }
+  
+  const p1data = buildProfilePts(gd.p1, 0);
+  let maxDepth = gd.p1.profTable;
+  let maxTime = p1data.endMin;
+  
+  let p2data = null;
+  if (gd.p2) {
+    const p2start = p1data.endMin + (gd.intervalMin || 0);
+    p2data = buildProfilePts(gd.p2, p2start);
+    maxDepth = Math.max(maxDepth, gd.p2.profTable);
+    maxTime = p2data.endMin;
+  }
+  
+  // Coordinate transforms
+  const tx = t => pad.left + (t / maxTime) * cw;
+  const ty = d => pad.top + (d / (maxDepth * 1.12)) * ch;
+  const maxD_scaled = maxDepth * 1.12;
+  
+  // --- Background ---
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(pad.left, pad.top, cw, ch);
+  
+  // --- Grid ---
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 4]);
+  const depthTicks = [];
+  for (let d = 0; d <= maxDepth; d += (maxDepth > 40 ? 10 : 5)) depthTicks.push(d);
+  depthTicks.forEach(d => {
+    const y = ty(d);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+  });
+  const timeTicks = 6;
+  for (let i = 0; i <= timeTicks; i++) {
+    const x = pad.left + (cw / timeTicks) * i;
+    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ch); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  
+  // --- Draw filled profile helper ---
+  function drawProfile(pts, lineColor, fillColor) {
+    if (pts.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(tx(pts[0].t), ty(pts[0].d));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i].t), ty(pts[i].d));
+    ctx.lineTo(tx(pts[pts.length-1].t), ty(0));
+    ctx.lineTo(tx(pts[0].t), ty(0));
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(tx(pts[0].t), ty(pts[0].d));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i].t), ty(pts[i].d));
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
+  
+  // Draw P1
+  drawProfile(p1data.pts, C.p1line, C.p1fill);
+  
+  // Draw P2 if present
+  if (p2data) drawProfile(p2data.pts, C.p2line, C.p2fill);
+  
+  // --- Axes ---
+  ctx.strokeStyle = C.axis;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + ch);
+  ctx.lineTo(pad.left + cw, pad.top + ch);
+  ctx.stroke();
+  
+  // --- Depth axis labels ---
+  ctx.fillStyle = C.axis;
+  ctx.font = 'bold 10px IBM Plex Mono, monospace';
+  ctx.textAlign = 'right';
+  depthTicks.forEach(d => {
+    ctx.fillText(d + 'm', pad.left - 5, ty(d) + 4);
+  });
+  
+  // --- Time axis labels ---
+  ctx.textAlign = 'center';
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.fillStyle = C.surface;
+  for (let i = 0; i <= timeTicks; i++) {
+    const tVal = Math.round((maxTime / timeTicks) * i);
+    const x = pad.left + (cw / timeTicks) * i;
+    ctx.fillText(tVal + 'min', x, pad.top + ch + 15);
+  }
+  
+  // --- Axis titles ---
+  ctx.save();
+  ctx.translate(13, pad.top + ch / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
+  ctx.fillStyle = C.axis;
+  ctx.fillText('Profondeur (m)', 0, 0);
+  ctx.restore();
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
+  ctx.fillStyle = C.axis;
+  ctx.fillText('Durée (min)', pad.left + cw / 2, H - 8);
+  
+  // --- Annotation helper ---
+  function annotate(x, y, text, color, align = 'center', offsetX = 0, offsetY = -10) {
+    const ax = x + offsetX, ay = y + offsetY;
+    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+    const tw = ctx.measureText(text).width;
+    const bpad = 3;
+    let bx = ax;
+    if (align === 'left') bx = ax;
+    else if (align === 'right') bx = ax - tw;
+    else bx = ax - tw / 2;
+    ctx.fillStyle = C.labelBg;
+    ctx.fillRect(bx - bpad, ay - 10 - bpad, tw + bpad * 2, 14 + bpad);
+    ctx.fillStyle = color;
+    ctx.textAlign = align === 'center' ? 'center' : (align === 'right' ? 'right' : 'left');
+    ctx.fillText(text, ax, ay);
+    ctx.textAlign = 'left';
+  }
+  
+  // --- Annotate P1 ---
+  const p1 = gd.p1;
+  const p1Pts = p1data.pts;
+  
+  // Depth annotation (fond)
+  const fondIdx = 2;
+  const fondPt = p1Pts[fondIdx];
+  const prevPt = p1Pts[fondIdx - 1];
+  const fondMidX = tx((fondPt.t + prevPt.t) / 2);
+  
+  // Depth line + label
+  ctx.strokeStyle = C.p1line;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, ty(p1.profTable));
+  ctx.lineTo(tx(fondPt.t), ty(p1.profTable));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  annotate(pad.left + 5, ty(p1.profTable), `Table: ${p1.profTable}m`, C.p1line, 'left', 0, -5);
+  
+  // Durée fond bracket
+  const fondStartX = tx(p1Pts[1].t);
+  const fondEndX = tx(p1Pts[2].t);
+  const fondY = ty(p1.profTable) + 8;
+  ctx.strokeStyle = C.p1line;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(fondStartX, fondY); ctx.lineTo(fondEndX, fondY);
+  ctx.moveTo(fondStartX, fondY - 4); ctx.lineTo(fondStartX, fondY + 4);
+  ctx.moveTo(fondEndX, fondY - 4); ctx.lineTo(fondEndX, fondY + 4);
+  ctx.stroke();
+  annotate((fondStartX + fondEndX) / 2, fondY, `Fond: ${p1.duree}min`, C.p1line, 'center', 0, 14);
+  
+  // Descent speed annotation
+  const descentMidX = tx(p1Pts[1].t / 2);
+  const descentMidY = (ty(0) + ty(p1.profTable)) / 2;
+  annotate(descentMidX, descentMidY, '15-17m/min', C.speed, 'center', 0, -5);
+
+  // Profondeur au début de la remontée
+  // Chercher le point marqué isRemStart, sinon prendre index 2 (fin du fond)
+  const remStartPt = p1Pts.find(p => p.isRemStart) || p1Pts[2];
+  const remonteeX = tx(remStartPt.t);
+  const remonteeY = ty(remStartPt.d);
+  const remLabel = p1.profRem && p1.profRem < p1.profTable
+    ? `↗ ${p1.profRem}m (réelle)`
+    : `↗ ${p1.profTable}m`;
+  // Petit cercle marqueur
+  ctx.beginPath();
+  ctx.arc(remonteeX, remonteeY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = C.warn;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Ligne pointillée vers l'axe Y
+  ctx.strokeStyle = C.warn;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(remonteeX, remonteeY);
+  ctx.lineTo(pad.left, remonteeY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  annotate(remonteeX, remonteeY, remLabel, C.warn, 'center', 0, -14);
+
+  p1data.paliers.forEach(pal => {
+    // Find pts with this depth in the profile
+    const palPts = p1Pts.filter(p => p.d === pal.d);
+    if (palPts.length >= 1) {
+      const pX = tx(palPts[0].t + pal.m / 2);
+      const pY = ty(pal.d);
+      // palier depth line
+      ctx.strokeStyle = C.palier;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      const palStart = palPts[0];
+      let palEnd = palPts[1] || palPts[0];
+      ctx.moveTo(tx(palStart.t), ty(pal.d));
+      ctx.lineTo(tx(palEnd.t), ty(pal.d));
+      ctx.stroke();
+      annotate(pX, pY, `${pal.d}m — ${pal.m}min`, C.palier, 'center', 0, -8);
+    }
+  });
+  
+  // Vitesse remontée entre paliers
+  if (p1data.paliers.length > 1) {
+    const midPalX = tx(p1Pts[p1Pts.length - 3]?.t || maxTime * 0.8);
+    const midPalY = ty(p1.profTable / 2);
+    annotate(midPalX, midPalY, '6m/min', C.speed, 'center', 0, 0);
+  }
+  
+  // GPS label P1
+  const endP1X = tx(p1Pts[p1Pts.length - 1].t);
+  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', 0, -14);
+  
+  // DTR P1
+  const dtrStartX = tx(p1Pts[2].t);
+  const dtrEndX = tx(p1Pts[p1Pts.length - 1].t);
+  const dtrY = pad.top + ch + 28;
+  ctx.strokeStyle = C.dtr;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(dtrStartX, dtrY); ctx.lineTo(dtrEndX, dtrY);
+  ctx.moveTo(dtrStartX, dtrY - 3); ctx.lineTo(dtrStartX, dtrY + 3);
+  ctx.moveTo(dtrEndX, dtrY - 3); ctx.lineTo(dtrEndX, dtrY + 3);
+  ctx.stroke();
+  ctx.fillStyle = C.dtr;
+  ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`DTR: ${p1.dtr}min`, (dtrStartX + dtrEndX) / 2, dtrY + 10);
+  
+  // Heures P1
+  if (p1.heure) {
+    const immerX = tx(p1Pts[0].t);
+    const sortieX = tx(p1Pts[p1Pts.length - 1].t);
+    annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -26);
+    const sortieH = addMinutes(p1.heure, p1Pts[p1Pts.length - 1].t);
+    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', 0, -26);
+  }
+  
+  // --- P2 annotations ---
+  if (p2data && gd.p2) {
+    const p2 = gd.p2;
+    const p2Pts = p2data.pts;
+    
+    // Intervalle surface band
+    const surfStartX = tx(p1Pts[p1Pts.length - 1].t);
+    const surfEndX = tx(p2Pts[0].t);
+    ctx.fillStyle = 'rgba(100,160,200,0.08)';
+    ctx.fillRect(surfStartX, pad.top, surfEndX - surfStartX, ch);
+    ctx.strokeStyle = C.surface;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(surfStartX, pad.top);
+    ctx.lineTo(surfStartX, pad.top + ch);
+    ctx.moveTo(surfEndX, pad.top);
+    ctx.lineTo(surfEndX, pad.top + ch);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const intLabel = intervalToLabel(gd.intervalMin);
+    annotate((surfStartX + surfEndX) / 2, pad.top + ch / 2, `Intervalle: ${intLabel}`, C.surface, 'center', 0, 0);
+    
+    // P2 depth
+    ctx.strokeStyle = C.p2line;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(tx(p2Pts[0].t), ty(p2.profTable));
+    ctx.lineTo(tx(p2Pts[2].t), ty(p2.profTable));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    annotate(tx(p2Pts[1].t + p2.duree / 2), ty(p2.profTable), `Table: ${p2.profTable}m`, C.p2line, 'center', 0, -8);
+    
+    // Durée fond P2
+    const f2StartX = tx(p2Pts[1].t);
+    const f2EndX = tx(p2Pts[2].t);
+    const f2Y = ty(p2.profTable) + 8;
+    ctx.strokeStyle = C.p2line;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(f2StartX, f2Y); ctx.lineTo(f2EndX, f2Y);
+    ctx.moveTo(f2StartX, f2Y - 4); ctx.lineTo(f2StartX, f2Y + 4);
+
+    // Profondeur au début de la remontée P2
+    const rem2StartPt = p2Pts.find(p => p.isRemStart) || p2Pts[2];
+    const rem2X = tx(rem2StartPt.t);
+    const rem2Y = ty(rem2StartPt.d);
+    const rem2Label = p2.profRem && p2.profRem < p2.profTable
+      ? `↗ ${p2.profRem}m (réelle)`
+      : `↗ ${p2.profTable}m`;
+    ctx.beginPath();
+    ctx.arc(rem2X, rem2Y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = C.warn;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = C.warn;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(rem2X, rem2Y);
+    ctx.lineTo(pad.left, rem2Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    annotate(rem2X, rem2Y, rem2Label, C.warn, 'center', 0, -14);
+    ctx.moveTo(f2EndX, f2Y - 4); ctx.lineTo(f2EndX, f2Y + 4);
+    ctx.stroke();
+    annotate((f2StartX + f2EndX) / 2, f2Y, `Fond: ${p2.duree}min`, C.p2line, 'center', 0, 14);
+    
+    // P2 paliers
+    p2data.paliers.forEach(pal => {
+      const palPts = p2Pts.filter(p => p.d === pal.d);
+      if (palPts.length >= 1) {
+        const pX = tx(palPts[0].t + pal.m / 2);
+        const pY = ty(pal.d);
+        ctx.strokeStyle = C.palier;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const pStart = palPts[0];
+        const pEnd = palPts[1] || palPts[0];
+        ctx.moveTo(tx(pStart.t), ty(pal.d));
+        ctx.lineTo(tx(pEnd.t), ty(pal.d));
+        ctx.stroke();
+        annotate(pX, pY, `${pal.d}m — ${pal.m}min`, C.palier, 'center', 0, -8);
+      }
+    });
+    
+    // GPS P2
+    const endP2X = tx(p2Pts[p2Pts.length - 1].t);
+    annotate(endP2X, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -14);
+    
+    // DTR P2
+    const dtr2StartX = tx(p2Pts[2].t);
+    const dtr2EndX = tx(p2Pts[p2Pts.length - 1].t);
+    ctx.strokeStyle = C.dtr;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(dtr2StartX, dtrY); ctx.lineTo(dtr2EndX, dtrY);
+    ctx.moveTo(dtr2StartX, dtrY - 3); ctx.lineTo(dtr2StartX, dtrY + 3);
+    ctx.moveTo(dtr2EndX, dtrY - 3); ctx.lineTo(dtr2EndX, dtrY + 3);
+    ctx.stroke();
+    ctx.fillStyle = C.dtr;
+    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`DTR: ${p2.dtr}min`, (dtr2StartX + dtr2EndX) / 2, dtrY + 10);
+  }
+  
+  // --- Legend / params table ---
+  const p1 = gd.p1;
+  let legendHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+  
+  legendHtml += `<div style="background:var(--panel2);border-left:3px solid #0d47a1;border-radius:6px;padding:10px 14px">
+    <div style="font-weight:700;color:#0d47a1;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
+      🤿 Plongée 1
+    </div>
+    <div style="font-size:0.82rem;line-height:1.8">
+      Prof. table : <strong>${p1.profTable} m</strong><br>
+      Durée fond : <strong>${p1.duree} min</strong><br>
+      Paliers : <strong>${formatPaliers(p1)}</strong><br>
+      DTR : <strong>${p1.dtr} min</strong><br>
+      GPS : <strong style="color:${p1.gps==='*'?'#b71c1c':'#00695c'}">${p1.gps}</strong><br>
+      ${p1.heure ? `Immersion : <strong>${p1.heure}</strong><br>Sortie : <strong>${addMinutes(p1.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
+    </div>
+  </div>`;
+  
+  if (gd.p2) {
+    const p2 = gd.p2;
+    legendHtml += `<div style="background:var(--panel2);border-left:3px solid #00695c;border-radius:6px;padding:10px 14px">
+      <div style="font-weight:700;color:#00695c;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
+        🤿 Plongée 2 ${gd.typeLabel ? `<span style="color:var(--text-dim);font-weight:400">(${gd.typeLabel})</span>` : ''}
+      </div>
+      <div style="font-size:0.82rem;line-height:1.8">
+        Intervalle : <strong>${intervalToLabel(gd.intervalMin)}</strong><br>
+        Prof. table : <strong>${p2.profTable} m</strong><br>
+        Durée fond : <strong>${p2.duree} min</strong><br>
+        ${gd.majoration ? `Majoration : <strong>+${gd.majoration} min</strong><br>` : ''}
+        Paliers : <strong>${formatPaliers(p2)}</strong><br>
+        DTR : <strong>${p2.dtr} min</strong><br>
+        GPS : <strong style="color:${p2.gps==='*'?'#b71c1c':'#00695c'}">${p2.gps}</strong>
+      </div>
+    </div>`;
+  } else {
+    legendHtml += `<div style="background:var(--panel2);border-radius:6px;padding:10px 14px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:0.82rem">
+      Saisir une 2ème plongée<br>dans l'onglet <strong>2 Plongées</strong>
+    </div>`;
+  }
+  
+  legendHtml += `</div>`;
+  legendHtml += `<div style="margin-top:10px;padding:8px 12px;background:#e8f4fd;border-radius:6px;font-size:0.76rem;color:var(--text-dim)">
+    <strong>Vitesses :</strong> Descente / Remontée fond → palier : 15–17 m/min · Entre paliers : 6 m/min &nbsp;|&nbsp;
+    <strong>DTR</strong> = Durée Totale de Remontée &nbsp;|&nbsp;
+    <strong style="color:#00695c">GPS</strong> = Groupe d'azote résiduel &nbsp;|&nbsp;
+    <span style="color:#b71c1c"><strong>GPS ★</strong> = Successives interdites</span>
+  </div>`;
+  
+  document.getElementById('graph-legend-content').innerHTML = legendHtml;
+  document.getElementById('graph-subtitle').textContent = gd.p2 ? 'P1 + P2' : 'P1';
+}
+
+function formatPaliers(entry) {
+  const parts = [];
+  if (entry.pal15 > 0) parts.push(`15m:${entry.pal15}min`);
+  if (entry.pal12 > 0) parts.push(`12m:${entry.pal12}min`);
+  if (entry.pal9 > 0) parts.push(`9m:${entry.pal9}min`);
+  if (entry.pal6 > 0) parts.push(`6m:${entry.pal6}min`);
+  if (entry.pal3 > 0) parts.push(`3m:${entry.pal3}min`);
+  return parts.length > 0 ? parts.join(' · ') : 'Aucun';
 }
 
 // ===================== INIT =====================

@@ -505,7 +505,7 @@ footer {
     <button class="tab active" onclick="switchTab('calcul')">🤿 Plongée simple</button>
     <button class="tab" onclick="switchTab('successives')">🔁 2 Plongées</button>
     <button class="tab" onclick="switchTab('graphique')">📈 Graphique P1</button>
-    <button class="tab" id="tab-graphique2p" style="display:none" onclick="switchTab('graphique2p')">📈 Graphique 2P</button>
+    <button class="tab" id="tab-graphique2p" onclick="switchTab('graphique2p')">📈 Graphique 2P</button>
     <button class="tab" onclick="switchTab('tableaux')">📋 Tables</button>
     <button class="tab" onclick="switchTab('methode')">📖 Méthode</button>
   </div>
@@ -545,7 +545,7 @@ footer {
     <div id="result-simple"></div>
 
     <!-- Bouton PDF -->
-    <div id="pdf-btn-zone" style="display:none;margin-top:12px;text-align:right">
+    <div id="pdf-btn-zone" style="margin-top:12px;text-align:right">
       <button onclick="exportPDF()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
         📄 Exporter en PDF
       </button>
@@ -635,6 +635,13 @@ footer {
     </div>
   </div>
 
+  <!-- Bouton PDF 2P - dans panel-successives -->
+    <div id="pdf2p-btn-zone" style="margin-top:12px;padding:0 16px 16px;text-align:right">
+      <button onclick="exportPDF2P()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
+        📄 Exporter en PDF
+      </button>
+    </div>
+
   <!-- ======================== PANEL TABLEAUX ======================== -->
   <div id="panel-tableaux" class="panel">
     <div class="card">
@@ -667,13 +674,6 @@ footer {
     <div class="card" id="graph-legend" style="display:none">
       <div class="card-title">Légende & paramètres</div>
       <div id="graph-legend-content"></div>
-    </div>
-
-    <!-- Bouton PDF 2P -->
-    <div id="pdf2p-btn-zone" style="display:none;margin-top:12px;text-align:right">
-      <button onclick="exportPDF2P()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
-        📄 Exporter en PDF
-      </button>
     </div>
   </div>
 

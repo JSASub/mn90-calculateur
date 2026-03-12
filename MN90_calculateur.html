@@ -503,8 +503,8 @@ footer {
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('calcul')">🤿 Plongée simple</button>
-    <button class="tab" onclick="switchTab('successives')">🔁 2 Plongées</button>
     <button class="tab" onclick="switchTab('graphique')">📈 Graphique P1</button>
+    <button class="tab" onclick="switchTab('successives')">🔁 2 Plongées</button>
     <button class="tab" id="tab-graphique2p" onclick="switchTab('graphique2p')">📈 Graphique 2P</button>
     <button class="tab" onclick="switchTab('tableaux')">📋 Tables</button>
     <button class="tab" onclick="switchTab('methode')">📖 Méthode</button>
@@ -1332,7 +1332,7 @@ function renderTab2() {
 // ===================== TABS =====================
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    const names = ['calcul', 'successives', 'graphique', 'graphique2p', 'tableaux', 'methode'];
+    const names = ['calcul', 'graphique', 'successives', 'graphique2p', 'tableaux', 'methode'];
     t.classList.toggle('active', names[i] === name);
   });
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -3084,6 +3084,12 @@ function exportPDF2P() {
   const fname = `MN90_2P_${p1.profTable}m_${p2.profTable}m_${gd.typeLabel||'plongees'}.pdf`;
   doc.save(fname);
 }
+
+// ===================== INITIALISATION =====================
+document.addEventListener('DOMContentLoaded', () => {
+  calcSimple();
+  calcSucc();
+});
 
 </script>
 </body>

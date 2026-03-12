@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tables MN90 — Calculateur FFESSM</title>
+<title>MN90 Calculateur v2</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -545,7 +545,7 @@ footer {
     <div id="result-simple"></div>
 
     <!-- Bouton PDF -->
-    <div id="pdf-btn-zone" style="margin-top:12px;text-align:right">
+    <div id="pdf-btn-zone" style="margin-top:12px;text-align:right;display:none">
       <button onclick="exportPDF()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
         📄 Exporter en PDF
       </button>
@@ -1146,6 +1146,11 @@ function calcSucc() {
     ], null);
     drawGraph2P();
     showGraph2PTab();
+    // Redessiner l'onglet Graphique 2P si actif, sinon marquer dirty
+    window._graph2pDirty = true;
+    if (document.getElementById('panel-graphique2p').classList.contains('active')) {
+      requestAnimationFrame(() => drawMainGraph2P());
+    }
     return;
   }
   
@@ -1160,6 +1165,11 @@ function calcSucc() {
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     drawGraph2P();
     showGraph2PTab();
+    // Redessiner l'onglet Graphique 2P si actif, sinon marquer dirty
+    window._graph2pDirty = true;
+    if (document.getElementById('panel-graphique2p').classList.contains('active')) {
+      requestAnimationFrame(() => drawMainGraph2P());
+    }
     return;
   }
   
@@ -1198,6 +1208,10 @@ function calcSucc() {
   renderResult(resEl, p2_entry, steps, { n2, majoration, dureeFictive });
   drawGraph2P();
   showGraph2PTab();
+  window._graph2pDirty = true;
+  if (document.getElementById('panel-graphique2p').classList.contains('active')) {
+    requestAnimationFrame(() => drawMainGraph2P());
+  }
 }
 
 function renderResult(el, entry, steps, succInfo) {
@@ -1342,7 +1356,7 @@ function switchTab(name) {
   if (name === 'tableaux') initTableSelect();
   if (name === 'graphique') drawMainGraph();
   if (name === 'graphique2p') {
-    requestAnimationFrame(() => drawMainGraph2P());
+    requestAnimationFrame(() => { drawMainGraph2P(); window._graph2pDirty = false; });
   }
 }
 

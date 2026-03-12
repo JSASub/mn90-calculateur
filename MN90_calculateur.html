@@ -871,8 +871,9 @@ function getN2(gps, intervalMin) {
 
 // Tableau II lookup : N2 + profondeur → majoration
 function getMajoration(n2, prof) {
-  const tab2Keys = Object.keys(TAB2.data).map(Number).sort((a,b) => a-b);
-  const keyFound = tab2Keys.find(k => k >= n2);
+  // Garder les clés en string pour éviter le problème "1.2" vs "1.20"
+  const tab2Keys = Object.keys(TAB2.data).sort((a,b) => parseFloat(a) - parseFloat(b));
+  const keyFound = tab2Keys.find(k => parseFloat(k) >= n2);
   if (!keyFound) return null;
   
   const profs = TAB2.profs;
@@ -880,7 +881,7 @@ function getMajoration(n2, prof) {
   if (!profFound) return null;
   
   const profIdx = profs.indexOf(profFound);
-  return TAB2.data[String(keyFound)][profIdx];
+  return TAB2.data[keyFound][profIdx];
 }
 
 // ===================== HELPER RÉSULTAT INLINE =====================

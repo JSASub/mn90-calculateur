@@ -492,6 +492,7 @@ footer {
   .method-row { grid-template-columns: 90px 1fr; }
 }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -541,6 +542,13 @@ footer {
     </div>
 
     <div id="result-simple"></div>
+
+    <!-- Bouton PDF -->
+    <div id="pdf-btn-zone" style="display:none;margin-top:12px;text-align:right">
+      <button onclick="exportPDF()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
+        📄 Exporter en PDF
+      </button>
+    </div>
   </div>
 
   <!-- ======================== PANEL SUCCESSIVES ======================== -->
@@ -1033,6 +1041,10 @@ function calcSimple() {
     type: 'simple',
     p1: { ...entry, heure, profRem: profRemFinal, rapide }
   };
+
+  // Afficher bouton PDF
+  const pdfBtn = document.getElementById('pdf-btn-zone');
+  if (pdfBtn) pdfBtn.style.display = 'block';
 }
 
 // ===================== CALCUL SUCCESSIVES =====================
@@ -2266,6 +2278,238 @@ function drawGraph2P() {
 
 // ===================== INIT =====================
 calcSimple();
+// ===================== EXPORT PDF =====================
+function exportPDF() {
+  if (!window.graphData || window.graphData.type !== 'simple') return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  // A4 paysage : 297 x 210 mm
+  const PW = 297, PH = 210;
+  const M = 12; // marge
+
+  const gd = window.graphData;
+  const p1 = gd.p1;
+
+  // ── Couleurs ──
+  const NAVY  = [13, 37, 64];
+  const BLUE  = [13, 71, 161];
+  const TEAL  = [0, 105, 92];
+  const ORANGE= [230, 81, 0];
+  const RED   = [183, 28, 28];
+  const GREY  = [80, 100, 120];
+  const WHITE = [255, 255, 255];
+  const LGREY = [235, 240, 245];
+
+  // ── En-tête ──
+  doc.setFillColor(...NAVY);
+  doc.rect(0, 0, PW, 14, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('🤿  MN90 — Fiche de plongée', M, 9.5);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  const now = new Date();
+  doc.text(`Édité le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`, PW - M, 9.5, {align:'right'});
+
+  // ── Zone gauche : paramètres (col 0..95) ──
+  const colW = 90;
+  let y = 20;
+
+  // Titre zone
+  doc.setFillColor(...BLUE);
+  doc.roundedRect(M, y, colW, 7, 1.5, 1.5, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PLONGÉE 1 — PARAMÈTRES', M + 3, y + 4.8);
+
+  y += 10;
+  doc.setTextColor(30, 48, 74);
+  doc.setFontSize(9);
+
+  const dtrReel = calcDTRReel(p1, p1.profRem);
+
+  const params = [
+    ['Profondeur table',   `${p1.profTable} m`],
+    ['Profondeur réelle',  p1.profRem && p1.profRem < p1.profTable ? `${p1.profRem} m` : `${p1.profTable} m`],
+    ['Durée fond',         `${p1.duree} min`],
+    ['Paliers',            (() => {
+      const pals = [
+        p1.pal15 ? `15m: ${p1.pal15}min` : '',
+        p1.pal12 ? `12m: ${p1.pal12}min` : '',
+        p1.pal9  ? `9m: ${p1.pal9}min`   : '',
+        p1.pal6  ? `6m: ${p1.pal6}min`   : '',
+        p1.pal3  ? `3m: ${p1.pal3}min`   : '',
+      ].filter(Boolean);
+      return pals.length ? pals.join(' · ') : 'Aucun';
+    })()],
+    ['DTR',                `${dtrReel} min${dtrReel !== p1.dtr ? ' (table: ' + p1.dtr + ' min)' : ''}`],
+    ['GPS',                p1.gps],
+    ['Heure immersion',    p1.heure || '—'],
+    ['Heure sortie',       p1.heure ? addMinutes(p1.heure, p1.duree + dtrReel) : '—'],
+  ];
+
+  params.forEach(([label, val], i) => {
+    const rowY = y + i * 8.5;
+    if (i % 2 === 0) {
+      doc.setFillColor(...LGREY);
+      doc.rect(M, rowY - 1.5, colW, 8, 'F');
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...GREY);
+    doc.setFontSize(7.5);
+    doc.text(label, M + 2, rowY + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NAVY);
+    doc.setFontSize(9);
+    doc.text(String(val), M + colW - 2, rowY + 4, {align:'right'});
+  });
+
+  // ── Procédure paliers ──
+  const paliers = [
+    {d:15, m:p1.pal15}, {d:12, m:p1.pal12}, {d:9, m:p1.pal9},
+    {d:6, m:p1.pal6}, {d:3, m:p1.pal3}
+  ].filter(p => p.m > 0);
+
+  const procY = y + params.length * 8.5 + 4;
+
+  doc.setFillColor(...TEAL);
+  doc.roundedRect(M, procY, colW, 7, 1.5, 1.5, 'F');
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PROCÉDURE DE REMONTÉE', M + 3, procY + 4.8);
+
+  let py = procY + 10;
+  doc.setFontSize(8.5);
+
+  if (paliers.length === 0) {
+    doc.setTextColor(...TEAL);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Pas de palier — remontée directe à 15-17 m/min', M + 2, py + 3);
+    py += 8;
+  } else {
+    paliers.forEach((pal, i) => {
+      if (i % 2 === 0) {
+        doc.setFillColor(...LGREY);
+        doc.rect(M, py - 1.5, colW, 8, 'F');
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...ORANGE);
+      doc.setFontSize(10);
+      doc.text(`${pal.d} m`, M + 3, py + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...NAVY);
+      doc.setFontSize(9);
+      doc.text(`${pal.m} min`, M + colW - 2, py + 4, {align:'right'});
+      py += 8.5;
+    });
+  }
+
+  // Vitesses
+  py += 2;
+  doc.setFontSize(7);
+  doc.setTextColor(...GREY);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Descente / remontée fond→palier : 15–17 m/min  ·  Entre paliers : 6 m/min', M, py + 3);
+
+  // ── Alerte remontée rapide ──
+  if (p1.rapide) {
+    py += 9;
+    const demiProf = Math.round((p1.profRem || p1.profTable) / 2);
+    doc.setFillColor(255, 243, 205);
+    doc.roundedRect(M, py, colW, 34, 2, 2, 'F');
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(M, py, colW, 34, 2, 2, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...ORANGE);
+    doc.text('⚡ Remontée rapide — Procédure IPA I-4.4', M + 3, py + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 50, 0);
+    doc.setFontSize(8);
+    doc.text(`• ${demiProf} m  →  5 min`, M + 4, py + 13);
+    doc.text('• 6 m  →  1 min', M + 4, py + 20);
+    doc.text('• 3 m  →  5 min minimum', M + 4, py + 27);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'italic');
+    doc.text('(voire plus si l\'ordinateur l\'indique)', M + 4, py + 32);
+  }
+
+  // ── Zone droite : graphique ──
+  // Dessiner le graphique sur un canvas offscreen
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = 900;
+  offCanvas.height = 480;
+  offCanvas.style.display = 'none';
+  document.body.appendChild(offCanvas);
+
+  // Copier le style de drawMainGraph mais sur offCanvas
+  const origCanvas = document.getElementById('mainCanvas');
+
+  // Forcer le redraw sur mainCanvas s'il n'est pas visible
+  const panel = document.getElementById('panel-graphique');
+  const wasHidden = !panel.classList.contains('active');
+  if (wasHidden) {
+    panel.style.visibility = 'hidden';
+    panel.style.position = 'absolute';
+    panel.classList.add('active');
+  }
+  drawMainGraph();
+
+  // Capturer le canvas principal
+  let imgData = null;
+  try {
+    imgData = document.getElementById('mainCanvas').toDataURL('image/png');
+  } catch(e) {
+    console.warn('Canvas capture failed:', e);
+  }
+
+  if (wasHidden) {
+    panel.classList.remove('active');
+    panel.style.visibility = '';
+    panel.style.position = '';
+  }
+  document.body.removeChild(offCanvas);
+
+  // Positionner le graphique : x=108, y=16, w=177, h=PH-28
+  const gx = M + colW + 5;
+  const gy = 16;
+  const gw = PW - gx - M;
+  const gh = PH - gy - M;
+
+  // Fond graphique
+  doc.setFillColor(232, 244, 253);
+  doc.roundedRect(gx, gy, gw, gh, 2, 2, 'F');
+
+  if (imgData) {
+    doc.addImage(imgData, 'PNG', gx + 1, gy + 1, gw - 2, gh - 2);
+  } else {
+    doc.setTextColor(...GREY);
+    doc.setFontSize(9);
+    doc.text('Graphique non disponible', gx + gw/2, gy + gh/2, {align:'center'});
+  }
+
+  // Bordure graphique
+  doc.setDrawColor(...BLUE);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(gx, gy, gw, gh, 2, 2, 'S');
+
+  // ── Pied de page ──
+  doc.setFillColor(...LGREY);
+  doc.rect(0, PH - 7, PW, 7, 'F');
+  doc.setTextColor(...GREY);
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Tables MN90-FFESSM — Document généré par le calculateur MN90 JSAS — À titre informatif uniquement', PW/2, PH - 2.5, {align:'center'});
+
+  // ── Sauvegarde ──
+  const fname = `MN90_${p1.profTable}m_${p1.duree}min_${(p1.heure||'').replace(':','')||'plongee'}.pdf`;
+  doc.save(fname);
+}
+
 </script>
 </body>
 </html>

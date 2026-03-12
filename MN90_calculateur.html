@@ -636,14 +636,13 @@ footer {
       <div class="card-title">Légende & paramètres</div>
       <div id="graph2-legend-content"></div>
     </div>
-  </div>
-
-  <!-- Bouton PDF 2P - dans panel-successives -->
+    <!-- Bouton PDF 2P -->
     <div id="pdf2p-btn-zone" style="margin-top:12px;padding:0 16px 16px;text-align:right">
       <button onclick="exportPDF2P()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
         📄 Exporter en PDF
       </button>
     </div>
+  </div>
 
   <!-- ======================== PANEL TABLEAUX ======================== -->
   <div id="panel-tableaux" class="panel">
@@ -1062,7 +1061,7 @@ function calcSimple() {
   renderInline('result-simple-inline', entry, heure, null);
 
   // Update shared graph data
-  window.graphData = {
+  window.graphDataSimple = {
     type: 'simple',
     p1: { ...entry, heure, profRem: profRemFinal, rapide }
   };
@@ -1140,7 +1139,7 @@ function calcSucc() {
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
     const p2RemC = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemC;
-    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemC, rapide: p2_rapide }, intervalMin, typeLabel: 'Consécutives' };
+    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemC, rapide: p2_rapide }, intervalMin, typeLabel: 'Consécutives' };
     renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`, p2_rapide);
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
@@ -1163,7 +1162,7 @@ function calcSucc() {
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P2 dans la table.</div>'; return; }
     const p2RemI = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemI;
-    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemI, rapide: p2_rapide }, intervalMin, typeLabel: 'Indépendante' };
+    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemI, rapide: p2_rapide }, intervalMin, typeLabel: 'Indépendante' };
     renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)', p2_rapide);
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     drawGraph2P();
@@ -1195,7 +1194,7 @@ function calcSucc() {
   
   const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;
   p2_entry.profRem = p2RemS;
-  window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS, rapide: p1_rapide }, p2: { ...p2_entry, profRem: p2RemS, rapide: p2_rapide }, intervalMin, majoration, typeLabel: 'Successives' };
+  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS, rapide: p1_rapide }, p2: { ...p2_entry, profRem: p2RemS, rapide: p2_rapide }, intervalMin, majoration, typeLabel: 'Successives' };
   
   renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide);
 
@@ -1365,7 +1364,8 @@ function switchTab(name) {
 
 // ===================== GRAPHIQUE PRINCIPAL =====================
 // Shared state : populated by calcSimple() and calcSucc()
-window.graphData = null;
+window.graphDataSimple = null;
+window.graphData2P = null;
 
 function buildProfilePts(entry, startMin) {
     const pts = [];
@@ -1428,7 +1428,7 @@ function drawMainGraph() {
   const noData = document.getElementById('graph-no-data');
   const legend = document.getElementById('graph-legend');
   
-  if (!window.graphData) {
+  if (!window.graphDataSimple) {
     noData.style.display = 'flex';
     canvas.style.display = 'none';
     legend.style.display = 'none';
@@ -1439,7 +1439,7 @@ function drawMainGraph() {
   canvas.style.display = 'block';
   legend.style.display = 'block';
   
-  const gd = window.graphData;
+  const gd = window.graphDataSimple;
   const W = canvas.offsetWidth || 700;
   const H = 360;
   canvas.width = W;
@@ -1964,7 +1964,7 @@ function formatPaliers(entry) {
 function drawGraph2P() {
   const card = document.getElementById('graph2-card');
   const legend = document.getElementById('graph2-legend');
-  const gd = window.graphData;
+  const gd = window.graphData2P;
   if (!gd || gd.type !== 'double' || !gd.p2) {
     card.style.display = 'none'; legend.style.display = 'none'; return;
   }
@@ -2339,7 +2339,7 @@ function showGraph2PTab() {
 function drawMainGraph2P() {
   const noDataEl = document.getElementById('graph2p-no-data');
   const legend = document.getElementById('graph2p-legend');
-  const gd = window.graphData;
+  const gd = window.graphData2P;
   if (!gd || gd.type !== 'double' || !gd.p2) {
     noDataEl.style.display = 'flex'; legend.style.display = 'none'; return;
   }
@@ -2706,14 +2706,14 @@ calcSimple();
 // ===================== EXPORT PDF =====================
 
 function exportPDF() {
-  if (!window.graphData || window.graphData.type !== 'simple') return;
+  if (!window.graphDataSimple || window.graphDataSimple.type !== 'simple') return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   // A4 paysage : 297 x 210 mm
   const PW = 297, PH = 210;
   const M = 12; // marge
 
-  const gd = window.graphData;
+  const gd = window.graphDataSimple;
   const p1 = gd.p1;
 
   // ── Couleurs ──
@@ -2956,11 +2956,11 @@ function exportPDF() {
 
 // ===================== EXPORT PDF 2 PLONGÉES =====================
 function exportPDF2P() {
-  if (!window.graphData || window.graphData.type !== 'double') return;
+  if (!window.graphData2P || window.graphData2P.type !== 'double') return;
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const PW = 297, PH = 210, M = 12;
-  const gd = window.graphData;
+  const gd = window.graphData2P;
   const p1 = gd.p1, p2 = gd.p2;
 
   const NAVY=[13,37,64], BLUE=[13,71,161], TEAL=[0,105,92], ORANGE=[230,81,0],

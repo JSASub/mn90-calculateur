@@ -1131,7 +1131,7 @@ function calcSucc() {
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
     const p2RemC = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemC;
-    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemC, rapide: p2_rapide }, intervalMin, typeLabel: 'Consécutives' };
+    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...entry, heure: p2_heure, profRem: p2RemC, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, typeLabel: 'Consécutives' };
     renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`, p2_rapide);
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
@@ -1153,7 +1153,7 @@ function calcSucc() {
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P2 dans la table.</div>'; return; }
     const p2RemI = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemI;
-    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemI, rapide: p2_rapide }, intervalMin, typeLabel: 'Indépendante' };
+    window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...entry, heure: p2_heure, profRem: p2RemI, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, typeLabel: 'Indépendante' };
     renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)', p2_rapide);
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     showGraph2PTab();
@@ -1184,7 +1184,7 @@ function calcSucc() {
   
   const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;
   p2_entry.profRem = p2RemS;
-  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...p2_entry, profRem: p2RemS, rapide: p2_rapide }, intervalMin, majoration, typeLabel: 'Successives' };
+  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...p2_entry, heure: p2_heure, profRem: p2RemS, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, majoration, typeLabel: 'Successives' };
   
   renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide);
 
@@ -1989,12 +1989,11 @@ function drawMainGraph2P() {
     hour: '#1a3a5c', speed: '#7b1fa2', dtr: '#e65100', rapid: '#e53935',
   };
 
-  function buildPts(entry, startMin) {
+  function buildPts(entry, startMin, dureeAffichee) {
     const pts = [];
     const descentTime = Math.ceil(entry.profTable / 15);
     pts.push({ t: startMin, d: 0 });
     pts.push({ t: startMin + descentTime, d: entry.profTable });
-    pts.push({ t: startMin + descentTime + entry.duree, d: entry.profTable });
 
     const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
     const allPaliers = [
@@ -2005,16 +2004,23 @@ function drawMainGraph2P() {
     const paliers = allPaliers;
     const firstPalDepth = paliers.length > 0 ? paliers[0].d : 0;
 
-    let cur = startMin + descentTime + entry.duree;
+    // Fond plat : durée réelle si fournie, sinon durée table
+    const dureeeFond = dureeAffichee || entry.duree;
+    const tFondEnd = startMin + descentTime + dureeeFond;
+    pts.push({ t: tFondEnd, d: entry.profTable });
 
+    // Si profRem < profTable : on ajoute remDepth dans pts (profil plein passe par ce point)
+    // La diagonale pointillée violette sera tracée PAR-DESSUS ce segment après drawFill
+    let cur = tFondEnd;
+    let remStartPt = null;
     if (remDepth < entry.profTable) {
-      const t = Math.ceil((entry.profTable - remDepth) / 15);
-      cur += t;
+      const diagTime = Math.ceil((entry.profTable - remDepth) / 15);
+      cur += diagTime;
+      remStartPt = { t: cur, d: remDepth };
       pts.push({ t: cur, d: remDepth, isRemStart: true });
     }
 
-    // Remontée fond/remDepth → premier palier
-    // Si remontée rapide : vitesse ~50 m/min (1 min mini visuelle) sinon 15 m/min
+    // Remontée remDepth → premier palier
     const ascentSpeed = entry.rapide ? 50 : 15;
     const ascentTime = Math.max(1, Math.ceil((remDepth - (firstPalDepth || 0)) / ascentSpeed));
     cur += ascentTime;
@@ -2036,16 +2042,47 @@ function drawMainGraph2P() {
     const lastD = paliers.length > 0 ? paliers[paliers.length-1].d : 0;
     if (lastD > 0) { cur += Math.ceil(lastD / 6); pts.push({ t: cur, d: 0 }); }
 
-    return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
+    return { pts, paliers, descentTime, firstPalDepth, endMin: cur, remStartPt, tFondEnd };
   }
 
-  const p1data = buildPts(gd.p1, 0);
+  const p1data = buildPts(gd.p1, 0, gd.p1.dureeReelle);
   const p2start = p1data.endMin + (gd.intervalMin || 0);
-  const p2data = buildPts(gd.p2, p2start);
+  const p2data = buildPts(gd.p2, p2start, gd.p2.dureeReelle);
   const maxDepth = Math.max(gd.p1.profTable, gd.p2.profTable);
   const maxTime = p2data.endMin;
 
-  const tx = t => pad.left + (t / maxTime) * cw;
+  // Échelle X avec compression de l'intervalle si > 60 min
+  const intervalMin = gd.intervalMin || 0;
+  const t_p1end = p1data.endMin;
+  const t_p2start = p2start;
+  const t_total = p2data.endMin;
+  const COMPRESS_THRESHOLD = 30; // minutes
+  const MAX_INTERVAL_FRAC = 0.15; // max 15% de la largeur pour l'intervalle
+
+  function tx(t) {
+    if (intervalMin <= COMPRESS_THRESHOLD) {
+      // Pas de compression : échelle linéaire normale
+      return pad.left + (t / t_total) * cw;
+    }
+    // Compression : l'intervalle prend MAX_INTERVAL_FRAC de cw
+    const w_p1   = (t_p1end / t_total) * cw;               // largeur naturelle P1
+    const w_p2   = ((t_total - t_p2start) / t_total) * cw; // largeur naturelle P2
+    const w_int_compressed = MAX_INTERVAL_FRAC * cw;
+    // Redistribuer le surplus aux plongées proportionnellement
+    const surplus = cw - w_p1 - w_p2 - w_int_compressed;
+    const scale_p = (w_p1 + w_p2 + surplus) / (w_p1 + w_p2);
+    const w_p1c = w_p1 * scale_p;
+    const w_p2c = w_p2 * scale_p;
+
+    if (t <= t_p1end) {
+      return pad.left + (t / t_p1end) * w_p1c;
+    } else if (t <= t_p2start) {
+      return pad.left + w_p1c + ((t - t_p1end) / intervalMin) * w_int_compressed;
+    } else {
+      return pad.left + w_p1c + w_int_compressed + ((t - t_p2start) / (t_total - t_p2start)) * w_p2c;
+    }
+  }
+
   const ty = d => pad.top + (d / (maxDepth * 1.15)) * ch;
 
   // Background
@@ -2057,9 +2094,20 @@ function drawMainGraph2P() {
     const y = ty(d);
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
   }
-  for (let i = 0; i <= 6; i++) {
-    const x = pad.left + (cw / 6) * i;
-    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ch); ctx.stroke();
+  // Grilles verticales aux moments clés si compression, sinon uniformes
+  if (intervalMin <= COMPRESS_THRESHOLD) {
+    for (let i = 0; i <= 6; i++) {
+      const x = tx((t_total / 6) * i);
+      ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ch); ctx.stroke();
+    }
+  } else {
+    // Grilles dans P1 et P2 uniquement (pas dans la zone compressée)
+    for (let i = 0; i <= 4; i++) {
+      const xP1 = tx((t_p1end / 4) * i);
+      ctx.beginPath(); ctx.moveTo(xP1, pad.top); ctx.lineTo(xP1, pad.top + ch); ctx.stroke();
+      const xP2 = tx(t_p2start + ((t_total - t_p2start) / 4) * i);
+      ctx.beginPath(); ctx.moveTo(xP2, pad.top); ctx.lineTo(xP2, pad.top + ch); ctx.stroke();
+    }
   }
 
   // Axes
@@ -2076,9 +2124,51 @@ function drawMainGraph2P() {
     ctx.fillText(d + 'm', pad.left - 4, ty(d) + 4);
   }
   ctx.textAlign = 'center';
-  for (let i = 0; i <= 6; i++) {
-    const t = Math.round((maxTime / 6) * i);
-    ctx.fillText(t + 'min', pad.left + (cw / 6) * i, pad.top + ch + 14);
+  if (intervalMin <= COMPRESS_THRESHOLD) {
+    // Axe X linéaire normal
+    for (let i = 0; i <= 6; i++) {
+      const t = Math.round((t_total / 6) * i);
+      ctx.fillText(t + 'min', tx(t), pad.top + ch + 14);
+    }
+  } else {
+    // Axe X avec compression : labels aux moments clés
+    const keyTimes = [
+      0,
+      Math.round(t_p1end * 0.5),
+      t_p1end,
+      Math.round(t_p2start),
+      Math.round(t_p2start + (t_total - t_p2start) * 0.5),
+      t_total
+    ];
+    keyTimes.forEach(t => {
+      ctx.fillText(Math.round(t) + 'min', tx(t), pad.top + ch + 14);
+    });
+
+    // Symbole de rupture d'axe (zigzag) sur la zone compressée
+    const bx = tx(t_p1end) + 2;
+    const by = pad.top + ch;
+    ctx.save();
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
+    // Zigzag haut
+    ctx.beginPath();
+    ctx.moveTo(bx,    by - 4);
+    ctx.lineTo(bx+5,  by - 8);
+    ctx.lineTo(bx+10, by - 4);
+    ctx.lineTo(bx+15, by - 8);
+    ctx.stroke();
+    // Zigzag bas (sur l'axe X)
+    ctx.beginPath();
+    ctx.moveTo(bx,    by + 2);
+    ctx.lineTo(bx+5,  by - 2);
+    ctx.lineTo(bx+10, by + 2);
+    ctx.lineTo(bx+15, by - 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Étiquette durée intervalle compressée
+    const intMidX = (tx(t_p1end) + tx(t_p2start)) / 2;
+    ctx.fillStyle = C.surface; ctx.font = 'italic 9px IBM Plex Sans, sans-serif';
+    ctx.fillText('(' + Math.round(intervalMin) + 'min)', intMidX, pad.top + ch + 14);
   }
 
   function annotate(x, y, text, color, align, offX, offY) {
@@ -2132,13 +2222,44 @@ function drawMainGraph2P() {
   // Accolade intervalle
   ctx.strokeStyle = C.surface; ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(surfStartX+2, pad.top+ch+12); ctx.lineTo(surfEndX-2, pad.top+ch+12);
-  ctx.moveTo(surfStartX+2, pad.top+ch+8); ctx.lineTo(surfStartX+2, pad.top+ch+16);
-  ctx.moveTo(surfEndX-2, pad.top+ch+8); ctx.lineTo(surfEndX-2, pad.top+ch+16);
+  ctx.moveTo(surfStartX+2, pad.top+ch+22); ctx.lineTo(surfEndX-2, pad.top+ch+22);
+  ctx.moveTo(surfStartX+2, pad.top+ch+18); ctx.lineTo(surfStartX+2, pad.top+ch+26);
+  ctx.moveTo(surfEndX-2, pad.top+ch+18); ctx.lineTo(surfEndX-2, pad.top+ch+26);
   ctx.stroke();
+
 
   drawFill(p1data.pts, C.p1line, C.p1fill);
   drawFill(p2data.pts, C.p2line, C.p2fill);
+
+
+  // Diagonale pointillée + annotations P1
+  const remP1 = (gd.p1.profRem && gd.p1.profRem < gd.p1.profTable) ? gd.p1.profRem : gd.p1.profTable;
+  const remStartP1 = p1data.remStartPt;
+  const rapideStartP1 = p1data.pts.find(p => p.isRapide);
+  if (remStartP1) {
+    // Diagonale depuis le DÉBUT du fond → profRem (trajet réel du plongeur)
+    const x1 = tx(p1data.pts[1].t), y1 = ty(gd.p1.profTable);
+    const x2 = tx(remStartP1.t),    y2 = ty(remStartP1.d);
+    // Fond blanc pour faire ressortir la diagonale
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    // Diagonale pointillée violette épaisse par-dessus
+    ctx.strokeStyle = '#7b1fa2';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([7, 4]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    // Cercle orange + label
+    ctx.beginPath(); ctx.arc(x2, y2, 4, 0, 2*Math.PI);
+    ctx.fillStyle = '#f57c00'; ctx.fill();
+    annotate(x2, y2, `↗ ${remP1}m`, '#f57c00', 'center', 0, -12);
+  }
+  if (gd.p1.rapide && rapideStartP1) {
+    annotate(tx(rapideStartP1.t)+5, ty(rapideStartP1.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
+  }
 
   // Profondeur table P1
   ctx.strokeStyle = C.p1line; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
@@ -2146,7 +2267,7 @@ function drawMainGraph2P() {
   ctx.moveTo(tx(p1data.pts[1].t), ty(gd.p1.profTable));
   ctx.lineTo(tx(p1data.pts[2].t), ty(gd.p1.profTable));
   ctx.stroke(); ctx.setLineDash([]);
-  annotate(pad.left + 5, ty(gd.p1.profTable), `P1 table: ${gd.p1.profTable}m`, C.p1line, 'left', 0, -5);
+  annotate(pad.left + 5, ty(gd.p1.profTable), `P1 table: ${gd.p1.profTable}m`, C.p1line, 'left', 0, 14);
 
   // Durée fond P1
   const f1x0 = tx(p1data.pts[1].t), f1x1 = tx(p1data.pts[2].t);
@@ -2155,32 +2276,7 @@ function drawMainGraph2P() {
   ctx.beginPath(); ctx.moveTo(f1x0, f1y-3); ctx.lineTo(f1x0, f1y+3);
   ctx.moveTo(f1x0, f1y); ctx.lineTo(f1x1, f1y);
   ctx.moveTo(f1x1, f1y-3); ctx.lineTo(f1x1, f1y+3); ctx.stroke();
-  annotate((f1x0+f1x1)/2, f1y, `${gd.p1.duree}min`, C.p1line, 'center', 0, 10);
-
-  // Point remontée rapide P1 (si applicable)
-  const remP1 = (gd.p1.profRem && gd.p1.profRem < gd.p1.profTable) ? gd.p1.profRem : gd.p1.profTable;
-  const remStartP1 = p1data.pts.find(p => p.isRemStart);
-  const rapideStartP1 = p1data.pts.find(p => p.isRapide);
-  if (remStartP1) {
-    ctx.beginPath(); ctx.arc(tx(remStartP1.t), ty(remStartP1.d), 4, 0, 2*Math.PI);
-    ctx.fillStyle = '#f57c00'; ctx.fill();
-    annotate(tx(remStartP1.t), ty(remStartP1.d), `↗ ${remP1}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P1 : fin fond (profTable) → début remontée (profRem)
-    const p1FondPt = p1data.pts[2]; // fin du fond à profTable
-    ctx.save();
-    ctx.strokeStyle = '#7b1fa2';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(tx(p1FondPt.t), ty(gd.p1.profTable));
-    ctx.lineTo(tx(remStartP1.t), ty(remStartP1.d));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-  if (gd.p1.rapide && rapideStartP1) {
-    annotate(tx(rapideStartP1.t)+5, ty(rapideStartP1.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
-  }
+  annotate((f1x0+f1x1)/2, f1y, `${gd.p1.dureeReelle || gd.p1.duree}min`, C.p1line, 'center', 0, 20);
 
   // Paliers P1
   for (let i = 0; i < p1data.paliers.length; i++) {
@@ -2201,10 +2297,12 @@ function drawMainGraph2P() {
   // Heures P1
   const p1 = gd.p1;
   if (p1.heure) {
-    annotate(tx(p1data.pts[0].t), ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -42);
+    annotate(tx(p1data.pts[0].t), ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -28);
     const sortieP1 = addMinutes(p1.heure, p1data.endMin);
-    annotate(endP1x, ty(0), `↑ ${sortieP1}`, C.hour, 'center', 0, -56);
+    annotate(endP1x, ty(0), `↑ ${sortieP1}`, C.hour, 'center', 0, -42);
   }
+
+
 
   // DTR P1
   const dtr1sx = tx(p1data.pts[2].t), dtr1ex = tx(p1data.endMin);
@@ -2219,14 +2317,41 @@ function drawMainGraph2P() {
   const dtrReel1 = calcDTRReel(gd.p1, gd.p1.profRem);
   ctx.fillText(`DTR P1: ${dtrReel1}min`, (dtr1sx+dtr1ex)/2, dtrY1+10);
 
-  // Profondeur table P2
+  // ── PLONGÉE 2 ──
   const p2 = gd.p2;
+
+  // Diagonale pointillée + annotations P2
+  const remP2 = (p2.profRem && p2.profRem < p2.profTable) ? p2.profRem : p2.profTable;
+  const remStartP2 = p2data.remStartPt;
+  const rapideStartP2 = p2data.pts.find(p => p.isRapide);
+  if (remStartP2) {
+    const x1 = tx(p2data.pts[1].t), y1 = ty(p2.profTable);
+    const x2 = tx(remStartP2.t),    y2 = ty(remStartP2.d);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = '#7b1fa2';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([7, 4]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(x2, y2, 4, 0, 2*Math.PI);
+    ctx.fillStyle = '#f57c00'; ctx.fill();
+    annotate(x2, y2, `↗ ${remP2}m`, '#f57c00', 'center', 0, -12);
+  }
+  if (p2.rapide && rapideStartP2) {
+    annotate(tx(rapideStartP2.t)+5, ty(rapideStartP2.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
+  }
+
+  // Profondeur table P2
   ctx.strokeStyle = C.p2line; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
   ctx.beginPath();
   ctx.moveTo(tx(p2data.pts[1].t), ty(p2.profTable));
   ctx.lineTo(tx(p2data.pts[2].t), ty(p2.profTable));
   ctx.stroke(); ctx.setLineDash([]);
-  annotate(tx(p2data.pts[1].t + p2.duree/2), ty(p2.profTable), `P2 table: ${p2.profTable}m`, C.p2line, 'center', 0, -8);
+  annotate(tx(p2data.pts[1].t) + 5, ty(p2.profTable), `P2 table: ${p2.profTable}m`, C.p2line, 'left', 0, 14);
 
   // Durée fond P2
   const f2x0 = tx(p2data.pts[1].t), f2x1 = tx(p2data.pts[2].t);
@@ -2235,32 +2360,8 @@ function drawMainGraph2P() {
   ctx.beginPath(); ctx.moveTo(f2x0, f2y-3); ctx.lineTo(f2x0, f2y+3);
   ctx.moveTo(f2x0, f2y); ctx.lineTo(f2x1, f2y);
   ctx.moveTo(f2x1, f2y-3); ctx.lineTo(f2x1, f2y+3); ctx.stroke();
-  annotate((f2x0+f2x1)/2, f2y, `${p2.duree}min`, C.p2line, 'center', 0, 10);
+  annotate((f2x0+f2x1)/2, f2y, `${p2.dureeReelle || p2.duree}min`, C.p2line, 'center', 0, 20);
 
-  // Point remontée rapide P2
-  const remP2 = (p2.profRem && p2.profRem < p2.profTable) ? p2.profRem : p2.profTable;
-  const remStartP2 = p2data.pts.find(p => p.isRemStart);
-  const rapideStartP2 = p2data.pts.find(p => p.isRapide);
-  if (remStartP2) {
-    ctx.beginPath(); ctx.arc(tx(remStartP2.t), ty(remStartP2.d), 4, 0, 2*Math.PI);
-    ctx.fillStyle = '#f57c00'; ctx.fill();
-    annotate(tx(remStartP2.t), ty(remStartP2.d), `↗ ${remP2}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P2 : fin fond (profTable) → début remontée (profRem)
-    const p2FondPt = p2data.pts[2]; // fin du fond à profTable
-    ctx.save();
-    ctx.strokeStyle = '#7b1fa2';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(tx(p2FondPt.t), ty(p2.profTable));
-    ctx.lineTo(tx(remStartP2.t), ty(remStartP2.d));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-  if (p2.rapide && rapideStartP2) {
-    annotate(tx(rapideStartP2.t)+5, ty(rapideStartP2.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
-  }
 
   // Paliers P2
   for (let i = 0; i < p2data.paliers.length; i++) {
@@ -2280,9 +2381,9 @@ function drawMainGraph2P() {
 
   // Heures P2
   if (p2.heure) {
-    annotate(tx(p2data.pts[0].t), ty(0), `↓ ${p2.heure}`, C.hour, 'center', 0, -42);
+    annotate(tx(p2data.pts[0].t), ty(0), `↓ ${p2.heure}`, C.hour, 'center', 0, -28);
     const sortieP2 = addMinutes(p2.heure, p2data.endMin - p2data.pts[0].t);
-    annotate(endP2x, ty(0), `↑ ${sortieP2}`, C.hour, 'center', 0, -56);
+    annotate(endP2x, ty(0), `↑ ${sortieP2}`, C.hour, 'center', 0, -42);
   }
 
   // DTR P2
@@ -2297,6 +2398,8 @@ function drawMainGraph2P() {
   const dtrReel2 = calcDTRReel(p2, p2.profRem);
   ctx.fillText(`DTR P2: ${dtrReel2}min`, (dtr2sx+dtr2ex)/2, dtrY1+10);
 
+
+
   // Alerte remontée rapide (si applicable)
   if (gd.p1.rapide || p2.rapide) {
     ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
@@ -2309,17 +2412,19 @@ function drawMainGraph2P() {
   const majInfo = gd.majoration !== undefined ? `<td>+${gd.majoration} min</td>` : '<td>—</td>';
   lc.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div><strong>Plongée 1</strong><br>
-    Prof. table : ${gd.p1.profTable}m · Durée : ${gd.p1.duree}min<br>
+    Prof. table : ${gd.p1.profTable}m · Durée : ${gd.p1.dureeReelle || gd.p1.duree}min<br>
     GPS : ${gd.p1.gps} · DTR : ${calcDTRReel(gd.p1, gd.p1.profRem)}min
     ${gd.p1.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
     <div><strong>Plongée 2</strong><br>
-    Prof. table : ${p2.profTable}m · Durée : ${p2.duree}min<br>
+    Prof. table : ${p2.profTable}m · Durée : ${p2.dureeReelle || p2.duree}min<br>
     GPS : ${p2.gps} · DTR : ${dtrReel2}min
     ${p2.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
   </div>
   <div style="margin-top:8px;font-size:0.8rem;color:var(--text-dim)">
     Intervalle : ${formatMin(gd.intervalMin)} (${gd.intervalMin} min) · Type : ${gd.typeLabel}
-    ${gd.majoration !== undefined ? ` · Majoration : +${gd.majoration} min` : ''}
+    ${gd.majoration !== undefined ? `<br>Majoration P2 : <strong>+${gd.majoration} min</strong>
+    · Durée fictive : <strong>${(p2.dureeReelle || p2.duree) + gd.majoration} min</strong>
+    · Durée fictive table : <strong>${p2.duree} min</strong>` : ''}
   </div>`;
 }
 

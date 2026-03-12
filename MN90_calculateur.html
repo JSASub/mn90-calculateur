@@ -1336,7 +1336,8 @@ function buildProfilePts(entry, startMin) {
     const tFondEnd = startMin + descentTime + entry.duree;
     pts.push({ t: tFondEnd, d: entry.profTable });
 
-    // Si profRem < profTable : point de début remontée après transit oblique (hors profil principal)
+    // Si profRem < profTable : point isRemStart pour la diagonale graphique et le cercle orange
+    // tFondEnd + diagTime = moment où le plongeur arrive à profRem après transit
     if (remDepth < entry.profTable) {
       const diagTime = Math.ceil((entry.profTable - remDepth) / 15);
       pts.push({ t: tFondEnd + diagTime, d: remDepth, isRemStart: true });
@@ -1352,7 +1353,11 @@ function buildProfilePts(entry, startMin) {
     ].filter(p => p.m > 0);
 
     let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
+    // cur part de tFondEnd + diagTime si profRem < profTable
     let cur = startMin + descentTime + entry.duree;
+    if (remDepth < entry.profTable) {
+      cur += Math.ceil((entry.profTable - remDepth) / 15);
+    }
     const ascentTime = Math.ceil((remDepth - firstPalDepth) / 15);
     cur += ascentTime;
     pts.push({ t: cur, d: firstPalDepth });

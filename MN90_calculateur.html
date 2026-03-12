@@ -1620,9 +1620,9 @@ function drawMainGraph() {
 
   // Diagonale pointillée colorée : trajet réel du plongeur de profTable → profRem pendant le fond
   if (p1.profRem && p1.profRem < p1.profTable) {
-    const diagX0 = tx(p1Pts[1].t);          // début du fond (bas de descente)
+    const diagX0 = tx(p1Pts[2].t);          // fin du fond (coin bas-droit)
     const diagY0 = ty(p1.profTable);         // profondeur table
-    const diagX1 = tx(p1Pts[2].t);          // fin du fond
+    const diagX1 = tx(remStartPt.t);         // début remontée (après transit)
     const diagY1 = ty(p1.profRem);           // profondeur remontée
     ctx.save();
     ctx.strokeStyle = '#7b1fa2';             // violet
@@ -2106,16 +2106,15 @@ function drawGraph2P() {
     ctx.beginPath(); ctx.arc(tx(remStartP1.t), ty(remStartP1.d), 4, 0, 2*Math.PI);
     ctx.fillStyle = '#f57c00'; ctx.fill();
     annotate(tx(remStartP1.t), ty(remStartP1.d), `↗ ${remP1}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P1
-    const p1FondPt = p1data.pts[2]; // fin du fond
-    const p1StartPt = p1data.pts[1]; // bas de descente
+    // Diagonale pointillée trajet réel P1 : fin fond (profTable) → début remontée (profRem)
+    const p1FondPt = p1data.pts[2]; // fin du fond à profTable
     ctx.save();
     ctx.strokeStyle = '#7b1fa2';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(tx(p1StartPt.t), ty(p1StartPt.d));
-    ctx.lineTo(tx(p1FondPt.t), ty(remStartP1.d));
+    ctx.moveTo(tx(p1FondPt.t), ty(gd.p1.profTable));
+    ctx.lineTo(tx(remStartP1.t), ty(remStartP1.d));
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
@@ -2187,16 +2186,15 @@ function drawGraph2P() {
     ctx.beginPath(); ctx.arc(tx(remStartP2.t), ty(remStartP2.d), 4, 0, 2*Math.PI);
     ctx.fillStyle = '#f57c00'; ctx.fill();
     annotate(tx(remStartP2.t), ty(remStartP2.d), `↗ ${remP2}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P2
-    const p2FondPt = p2data.pts[2];
-    const p2StartPt = p2data.pts[1];
+    // Diagonale pointillée trajet réel P2 : fin fond (profTable) → début remontée (profRem)
+    const p2FondPt = p2data.pts[2]; // fin du fond à profTable
     ctx.save();
     ctx.strokeStyle = '#7b1fa2';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    ctx.moveTo(tx(p2StartPt.t), ty(p2StartPt.d));
-    ctx.lineTo(tx(p2FondPt.t), ty(remStartP2.d));
+    ctx.moveTo(tx(p2FondPt.t), ty(p2.profTable));
+    ctx.lineTo(tx(remStartP2.t), ty(remStartP2.d));
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();

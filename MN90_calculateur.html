@@ -495,9 +495,7 @@ footer {
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-<div style="background:#2e7d32;color:white;text-align:center;padding:6px;font-weight:bold;font-size:0.85rem;letter-spacing:1px">
-  ✅ VERSION CORRIGÉE — Mars 2026 — pdf-btn caché + graphique 2P dynamique
-</div>
+
 <div class="container">
   <header>
     <h1>TABLES MN90</h1>
@@ -627,15 +625,7 @@ footer {
 
     <div id="result-succ"></div>
 
-    <!-- Graphique 2 plongées intégré -->
-    <div class="card" id="graph2-card" style="display:none">
-      <div class="card-title">📈 Profil 2 plongées <span id="graph2-subtitle" class="badge">—</span></div>
-      <canvas id="canvas2P" style="width:100%;border-radius:8px;background:#e8f4fd;border:1px solid var(--border)"></canvas>
-    </div>
-    <div class="card" id="graph2-legend" style="display:none">
-      <div class="card-title">Légende & paramètres</div>
-      <div id="graph2-legend-content"></div>
-    </div>
+
     <!-- Bouton PDF 2P -->
     <div id="pdf2p-btn-zone" style="margin-top:12px;padding:0 16px 16px;text-align:right">
       <button onclick="exportPDF2P()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.9rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.18)">
@@ -1075,8 +1065,10 @@ function calcSimple() {
 function calcSucc() {
   const p1_prof = parseInt(document.getElementById('s_p1_prof').value) || 0;
   const p1_duree = parseInt(document.getElementById('s_p1_duree').value) || 0;
-  const p1_heure = document.getElementById('s_p1_heure').value || '09:00';
-  const p2_heure = document.getElementById('s_p2_heure').value || '14:00';
+  const _p1h_raw = document.getElementById('s_p1_heure').value;
+  const p1_heure = (_p1h_raw && /^\d{2}:\d{2}$/.test(_p1h_raw)) ? _p1h_raw : '09:00';
+  const _p2h_raw = document.getElementById('s_p2_heure').value;
+  const p2_heure = (_p2h_raw && /^\d{2}:\d{2}$/.test(_p2h_raw)) ? _p2h_raw : '14:00';
   const p2_prof = parseInt(document.getElementById('s_p2_prof').value) || 0;
   const p2_duree = parseInt(document.getElementById('s_p2_duree').value) || 0;
   const p1_rapide = document.getElementById('s_p1_rapide').checked;
@@ -1146,7 +1138,6 @@ function calcSucc() {
       {label: 'Profondeur max', value: profMax + ' m'},
       {label: 'Durée totale fictive', value: dureeTotal + ' min'}
     ], null);
-    drawGraph2P();
     showGraph2PTab();
     // Redessiner l'onglet Graphique 2P si actif, sinon marquer dirty
     window._graph2pDirty = true;
@@ -1165,7 +1156,6 @@ function calcSucc() {
     window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...entry, profRem: p2RemI, rapide: p2_rapide }, intervalMin, typeLabel: 'Indépendante' };
     renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)', p2_rapide);
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
-    drawGraph2P();
     showGraph2PTab();
     // Redessiner l'onglet Graphique 2P si actif, sinon marquer dirty
     window._graph2pDirty = true;
@@ -1194,7 +1184,7 @@ function calcSucc() {
   
   const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;
   p2_entry.profRem = p2RemS;
-  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS, rapide: p1_rapide }, p2: { ...p2_entry, profRem: p2RemS, rapide: p2_rapide }, intervalMin, majoration, typeLabel: 'Successives' };
+  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide }, p2: { ...p2_entry, profRem: p2RemS, rapide: p2_rapide }, intervalMin, majoration, typeLabel: 'Successives' };
   
   renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide);
 
@@ -1208,7 +1198,6 @@ function calcSucc() {
   ];
   
   renderResult(resEl, p2_entry, steps, { n2, majoration, dureeFictive });
-  drawGraph2P();
   showGraph2PTab();
   window._graph2pDirty = true;
   if (document.getElementById('panel-graphique2p').classList.contains('active')) {
@@ -1358,6 +1347,8 @@ function switchTab(name) {
   if (name === 'tableaux') initTableSelect();
   if (name === 'graphique') drawMainGraph();
   if (name === 'graphique2p') {
+    // Si pas encore de données, tenter un calcul
+    if (!window.graphData2P) { try { calcSucc(); } catch(e) {} }
     requestAnimationFrame(() => { drawMainGraph2P(); window._graph2pDirty = false; });
   }
 }
@@ -1961,375 +1952,6 @@ function formatPaliers(entry) {
 }
 
 // ===================== GRAPHIQUE 2 PLONGÉES (intégré panel successives) =====================
-function drawGraph2P() {
-  const card = document.getElementById('graph2-card');
-  const legend = document.getElementById('graph2-legend');
-  const gd = window.graphData2P;
-  if (!gd || gd.type !== 'double' || !gd.p2) {
-    card.style.display = 'none'; legend.style.display = 'none'; return;
-  }
-  card.style.display = 'block';
-  legend.style.display = 'block';
-  document.getElementById('graph2-subtitle').textContent = gd.typeLabel || '2 Plongées';
-
-  const canvas = document.getElementById('canvas2P');
-  const W = canvas.offsetWidth || 700;
-  const H = 360;
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-
-  const pad = { top: 60, right: 24, bottom: 55, left: 52 };
-  const cw = W - pad.left - pad.right;
-  const ch = H - pad.top - pad.bottom;
-
-  const C = {
-    bg: '#e8f4fd', grid: 'rgba(21,101,192,0.12)', axis: '#18304a',
-    p1line: '#0d47a1', p1fill: 'rgba(13,71,161,0.15)',
-    p2line: '#00695c', p2fill: 'rgba(0,105,92,0.13)',
-    palier: '#bf360c', surface: '#6a8fa8', label: '#0a1520',
-    labelBg: 'rgba(255,255,255,0.88)', gps: '#00695c', warn: '#bf360c',
-    hour: '#1a3a5c', speed: '#7b1fa2', dtr: '#e65100', rapid: '#e53935',
-  };
-
-  function buildPts(entry, startMin) {
-    const pts = [];
-    const descentTime = Math.ceil(entry.profTable / 15);
-    pts.push({ t: startMin, d: 0 });
-    pts.push({ t: startMin + descentTime, d: entry.profTable });
-    pts.push({ t: startMin + descentTime + entry.duree, d: entry.profTable });
-
-    const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
-    const allPaliers = [
-      { d: 15, m: entry.pal15 }, { d: 12, m: entry.pal12 },
-      { d: 9,  m: entry.pal9  }, { d: 6,  m: entry.pal6  },
-      { d: 3,  m: entry.pal3  },
-    ].filter(p => p.m > 0);
-    const paliers = allPaliers;
-    const firstPalDepth = paliers.length > 0 ? paliers[0].d : 0;
-
-    let cur = startMin + descentTime + entry.duree;
-
-    if (remDepth < entry.profTable) {
-      const t = Math.ceil((entry.profTable - remDepth) / 15);
-      cur += t;
-      pts.push({ t: cur, d: remDepth, isRemStart: true });
-    }
-
-    // Remontée fond/remDepth → premier palier
-    // Si remontée rapide : vitesse ~50 m/min (1 min mini visuelle) sinon 15 m/min
-    const ascentSpeed = entry.rapide ? 50 : 15;
-    const ascentTime = Math.max(1, Math.ceil((remDepth - (firstPalDepth || 0)) / ascentSpeed));
-    cur += ascentTime;
-    if (paliers.length > 0) {
-      pts.push({ t: cur, d: firstPalDepth, isRapide: !!entry.rapide });
-    } else {
-      pts.push({ t: cur, d: 0 });
-    }
-
-    for (let i = 0; i < paliers.length; i++) {
-      cur += paliers[i].m;
-      pts.push({ t: cur, d: paliers[i].d });
-      if (i + 1 < paliers.length) {
-        const moveT = Math.ceil((paliers[i].d - paliers[i+1].d) / 6);
-        cur += moveT;
-        pts.push({ t: cur, d: paliers[i+1].d });
-      }
-    }
-    const lastD = paliers.length > 0 ? paliers[paliers.length-1].d : 0;
-    if (lastD > 0) { cur += Math.ceil(lastD / 6); pts.push({ t: cur, d: 0 }); }
-
-    return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
-  }
-
-  const p1data = buildPts(gd.p1, 0);
-  const p2start = p1data.endMin + (gd.intervalMin || 0);
-  const p2data = buildPts(gd.p2, p2start);
-  const maxDepth = Math.max(gd.p1.profTable, gd.p2.profTable);
-  const maxTime = p2data.endMin;
-
-  const tx = t => pad.left + (t / maxTime) * cw;
-  const ty = d => pad.top + (d / (maxDepth * 1.15)) * ch;
-
-  // Background
-  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
-
-  // Grid
-  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
-  for (let d = 0; d <= maxDepth; d += 5) {
-    const y = ty(d);
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
-  }
-  for (let i = 0; i <= 6; i++) {
-    const x = pad.left + (cw / 6) * i;
-    ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ch); ctx.stroke();
-  }
-
-  // Axes
-  ctx.strokeStyle = C.axis; ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, pad.top + ch);
-  ctx.lineTo(pad.left + cw, pad.top + ch);
-  ctx.stroke();
-
-  // Axis labels
-  ctx.fillStyle = C.axis; ctx.font = '10px IBM Plex Sans, sans-serif';
-  ctx.textAlign = 'right';
-  for (let d = 0; d <= maxDepth; d += 5) {
-    ctx.fillText(d + 'm', pad.left - 4, ty(d) + 4);
-  }
-  ctx.textAlign = 'center';
-  for (let i = 0; i <= 6; i++) {
-    const t = Math.round((maxTime / 6) * i);
-    ctx.fillText(t + 'min', pad.left + (cw / 6) * i, pad.top + ch + 14);
-  }
-
-  function annotate(x, y, text, color, align, offX, offY) {
-    const ax = x + (offX || 0), ay = y + (offY || 0);
-    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
-    const tw = ctx.measureText(text).width;
-    const bx = align === 'left' ? ax : align === 'right' ? ax - tw : ax - tw/2;
-    ctx.fillStyle = C.labelBg;
-    ctx.fillRect(bx - 2, ay - 10, tw + 4, 13);
-    ctx.fillStyle = color; ctx.textAlign = align || 'center';
-    ctx.fillText(text, ax, ay);
-  }
-
-  function drawFill(pts, lineColor, fillColor) {
-    if (pts.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(tx(pts[0].t), ty(pts[0].d));
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i].t), ty(pts[i].d));
-    ctx.lineTo(tx(pts[pts.length-1].t), ty(0));
-    ctx.lineTo(tx(pts[0].t), ty(0));
-    ctx.closePath(); ctx.fillStyle = fillColor; ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(tx(pts[0].t), ty(pts[0].d));
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(tx(pts[i].t), ty(pts[i].d));
-    ctx.strokeStyle = lineColor; ctx.lineWidth = 2.5; ctx.stroke();
-  }
-
-  // Intervalle surface
-  const surfStartX = tx(p1data.endMin);
-  const surfEndX = tx(p2start);
-  ctx.fillStyle = 'rgba(100,160,200,0.08)';
-  ctx.fillRect(surfStartX, pad.top, surfEndX - surfStartX, ch);
-  ctx.strokeStyle = C.surface; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
-  ctx.beginPath();
-  ctx.moveTo(surfStartX, pad.top); ctx.lineTo(surfStartX, pad.top + ch);
-  ctx.moveTo(surfEndX, pad.top); ctx.lineTo(surfEndX, pad.top + ch);
-  ctx.stroke(); ctx.setLineDash([]);
-  // Durée intervalle
-  const intMins = gd.intervalMin;
-  const intLabel = formatMin(intMins);
-  const intType = intMins <= 15 ? 'Consécutives' : intMins > 720 ? 'Indépendante' : 'Successives';
-  const bw = surfEndX - surfStartX;
-  const bMidX = (surfStartX + surfEndX) / 2;
-  if (bw > 80) {
-    annotate(bMidX, pad.top + ch/2 - 10, `⏱ ${intLabel}`, C.surface, 'center', 0, 0);
-    annotate(bMidX, pad.top + ch/2 + 8, `(${intMins} min)`, C.surface, 'center', 0, 0);
-    annotate(bMidX, pad.top + ch/2 + 26, intType, C.surface, 'center', 0, 0);
-  } else {
-    annotate(bMidX, pad.top + ch/2, intLabel, C.surface, 'center', 0, 0);
-  }
-  // Accolade intervalle
-  ctx.strokeStyle = C.surface; ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(surfStartX+2, pad.top+ch+12); ctx.lineTo(surfEndX-2, pad.top+ch+12);
-  ctx.moveTo(surfStartX+2, pad.top+ch+8); ctx.lineTo(surfStartX+2, pad.top+ch+16);
-  ctx.moveTo(surfEndX-2, pad.top+ch+8); ctx.lineTo(surfEndX-2, pad.top+ch+16);
-  ctx.stroke();
-
-  drawFill(p1data.pts, C.p1line, C.p1fill);
-  drawFill(p2data.pts, C.p2line, C.p2fill);
-
-  // Profondeur table P1
-  ctx.strokeStyle = C.p1line; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-  ctx.beginPath();
-  ctx.moveTo(tx(p1data.pts[1].t), ty(gd.p1.profTable));
-  ctx.lineTo(tx(p1data.pts[2].t), ty(gd.p1.profTable));
-  ctx.stroke(); ctx.setLineDash([]);
-  annotate(pad.left + 5, ty(gd.p1.profTable), `P1 table: ${gd.p1.profTable}m`, C.p1line, 'left', 0, -5);
-
-  // Durée fond P1
-  const f1x0 = tx(p1data.pts[1].t), f1x1 = tx(p1data.pts[2].t);
-  const f1y = ty(gd.p1.profTable) + 8;
-  ctx.strokeStyle = C.p1line; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(f1x0, f1y-3); ctx.lineTo(f1x0, f1y+3);
-  ctx.moveTo(f1x0, f1y); ctx.lineTo(f1x1, f1y);
-  ctx.moveTo(f1x1, f1y-3); ctx.lineTo(f1x1, f1y+3); ctx.stroke();
-  annotate((f1x0+f1x1)/2, f1y, `${gd.p1.duree}min`, C.p1line, 'center', 0, 10);
-
-  // Point remontée rapide P1 (si applicable)
-  const remP1 = (gd.p1.profRem && gd.p1.profRem < gd.p1.profTable) ? gd.p1.profRem : gd.p1.profTable;
-  const remStartP1 = p1data.pts.find(p => p.isRemStart);
-  const rapideStartP1 = p1data.pts.find(p => p.isRapide);
-  if (remStartP1) {
-    ctx.beginPath(); ctx.arc(tx(remStartP1.t), ty(remStartP1.d), 4, 0, 2*Math.PI);
-    ctx.fillStyle = '#f57c00'; ctx.fill();
-    annotate(tx(remStartP1.t), ty(remStartP1.d), `↗ ${remP1}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P1 : fin fond (profTable) → début remontée (profRem)
-    const p1FondPt = p1data.pts[2]; // fin du fond à profTable
-    ctx.save();
-    ctx.strokeStyle = '#7b1fa2';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(tx(p1FondPt.t), ty(gd.p1.profTable));
-    ctx.lineTo(tx(remStartP1.t), ty(remStartP1.d));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-  if (gd.p1.rapide && rapideStartP1) {
-    annotate(tx(rapideStartP1.t)+5, ty(rapideStartP1.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
-  }
-
-  // Paliers P1
-  for (let i = 0; i < p1data.paliers.length; i++) {
-    const pal = p1data.paliers[i];
-    const idx = p1data.pts.findIndex(p => p.d === pal.d && p.t > p1data.pts[2].t);
-    if (idx < 0) continue;
-    const pStart = p1data.pts[idx];
-    const pEnd = p1data.pts[idx+1] || pStart;
-    ctx.strokeStyle = C.palier; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(tx(pStart.t), ty(pal.d)); ctx.lineTo(tx(pEnd.t), ty(pal.d)); ctx.stroke();
-    annotate((tx(pStart.t)+tx(pEnd.t))/2, ty(pal.d), `${pal.d}m — ${pal.m}min`, C.palier, 'center', 0, -8);
-  }
-
-  // GPS P1
-  const endP1x = tx(p1data.endMin);
-  annotate(endP1x, ty(0), `GPS: ${gd.p1.gps}`, gd.p1.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
-
-  // Heures P1
-  const p1 = gd.p1;
-  if (p1.heure) {
-    annotate(tx(p1data.pts[0].t), ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -42);
-    const sortieP1 = addMinutes(p1.heure, p1data.endMin);
-    annotate(endP1x, ty(0), `↑ ${sortieP1}`, C.hour, 'center', 0, -56);
-  }
-
-  // DTR P1
-  const dtr1sx = tx(p1data.pts[2].t), dtr1ex = tx(p1data.endMin);
-  const dtrY1 = pad.top + ch + 28;
-  ctx.strokeStyle = C.dtr; ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(dtr1sx, dtrY1); ctx.lineTo(dtr1ex, dtrY1);
-  ctx.moveTo(dtr1sx, dtrY1-3); ctx.lineTo(dtr1sx, dtrY1+3);
-  ctx.moveTo(dtr1ex, dtrY1-3); ctx.lineTo(dtr1ex, dtrY1+3);
-  ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
-  const dtrReel1 = calcDTRReel(gd.p1, gd.p1.profRem);
-  ctx.fillText(`DTR P1: ${dtrReel1}min`, (dtr1sx+dtr1ex)/2, dtrY1+10);
-
-  // Profondeur table P2
-  const p2 = gd.p2;
-  ctx.strokeStyle = C.p2line; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
-  ctx.beginPath();
-  ctx.moveTo(tx(p2data.pts[1].t), ty(p2.profTable));
-  ctx.lineTo(tx(p2data.pts[2].t), ty(p2.profTable));
-  ctx.stroke(); ctx.setLineDash([]);
-  annotate(tx(p2data.pts[1].t + p2.duree/2), ty(p2.profTable), `P2 table: ${p2.profTable}m`, C.p2line, 'center', 0, -8);
-
-  // Durée fond P2
-  const f2x0 = tx(p2data.pts[1].t), f2x1 = tx(p2data.pts[2].t);
-  const f2y = ty(p2.profTable) + 8;
-  ctx.strokeStyle = C.p2line; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(f2x0, f2y-3); ctx.lineTo(f2x0, f2y+3);
-  ctx.moveTo(f2x0, f2y); ctx.lineTo(f2x1, f2y);
-  ctx.moveTo(f2x1, f2y-3); ctx.lineTo(f2x1, f2y+3); ctx.stroke();
-  annotate((f2x0+f2x1)/2, f2y, `${p2.duree}min`, C.p2line, 'center', 0, 10);
-
-  // Point remontée rapide P2
-  const remP2 = (p2.profRem && p2.profRem < p2.profTable) ? p2.profRem : p2.profTable;
-  const remStartP2 = p2data.pts.find(p => p.isRemStart);
-  const rapideStartP2 = p2data.pts.find(p => p.isRapide);
-  if (remStartP2) {
-    ctx.beginPath(); ctx.arc(tx(remStartP2.t), ty(remStartP2.d), 4, 0, 2*Math.PI);
-    ctx.fillStyle = '#f57c00'; ctx.fill();
-    annotate(tx(remStartP2.t), ty(remStartP2.d), `↗ ${remP2}m`, '#f57c00', 'center', 0, -12);
-    // Diagonale pointillée trajet réel P2 : fin fond (profTable) → début remontée (profRem)
-    const p2FondPt = p2data.pts[2]; // fin du fond à profTable
-    ctx.save();
-    ctx.strokeStyle = '#7b1fa2';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(tx(p2FondPt.t), ty(p2.profTable));
-    ctx.lineTo(tx(remStartP2.t), ty(remStartP2.d));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.restore();
-  }
-  if (p2.rapide && rapideStartP2) {
-    annotate(tx(rapideStartP2.t)+5, ty(rapideStartP2.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
-  }
-
-  // Paliers P2
-  for (let i = 0; i < p2data.paliers.length; i++) {
-    const pal = p2data.paliers[i];
-    const idx = p2data.pts.findIndex(p => p.d === pal.d && p.t > p2data.pts[2].t);
-    if (idx < 0) continue;
-    const pStart = p2data.pts[idx];
-    const pEnd = p2data.pts[idx+1] || pStart;
-    ctx.strokeStyle = C.palier; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(tx(pStart.t), ty(pal.d)); ctx.lineTo(tx(pEnd.t), ty(pal.d)); ctx.stroke();
-    annotate((tx(pStart.t)+tx(pEnd.t))/2, ty(pal.d), `${pal.d}m — ${pal.m}min`, C.palier, 'center', 0, -8);
-  }
-
-  // GPS P2
-  const endP2x = tx(p2data.endMin);
-  annotate(endP2x, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
-
-  // Heures P2
-  if (p2.heure) {
-    annotate(tx(p2data.pts[0].t), ty(0), `↓ ${p2.heure}`, C.hour, 'center', 0, -42);
-    const sortieP2 = addMinutes(p2.heure, p2data.endMin - p2data.pts[0].t);
-    annotate(endP2x, ty(0), `↑ ${sortieP2}`, C.hour, 'center', 0, -56);
-  }
-
-  // DTR P2
-  const dtr2sx = tx(p2data.pts[2].t), dtr2ex = tx(p2data.endMin);
-  ctx.strokeStyle = C.dtr; ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(dtr2sx, dtrY1); ctx.lineTo(dtr2ex, dtrY1);
-  ctx.moveTo(dtr2sx, dtrY1-3); ctx.lineTo(dtr2sx, dtrY1+3);
-  ctx.moveTo(dtr2ex, dtrY1-3); ctx.lineTo(dtr2ex, dtrY1+3);
-  ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
-  const dtrReel2 = calcDTRReel(p2, p2.profRem);
-  ctx.fillText(`DTR P2: ${dtrReel2}min`, (dtr2sx+dtr2ex)/2, dtrY1+10);
-
-  // Alerte remontée rapide (si applicable)
-  if (gd.p1.rapide || p2.rapide) {
-    ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
-    ctx.fillStyle = C.rapid; ctx.textAlign = 'left';
-    ctx.fillText('⚡ Procédure IPA I-4.4 applicable', pad.left, pad.top - 8);
-  }
-
-  // Légende
-  const lc = document.getElementById('graph2-legend-content');
-  const majInfo = gd.majoration !== undefined ? `<td>+${gd.majoration} min</td>` : '<td>—</td>';
-  lc.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <div><strong>Plongée 1</strong><br>
-    Prof. table : ${gd.p1.profTable}m · Durée : ${gd.p1.duree}min<br>
-    GPS : ${gd.p1.gps} · DTR : ${calcDTRReel(gd.p1, gd.p1.profRem)}min
-    ${gd.p1.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
-    <div><strong>Plongée 2</strong><br>
-    Prof. table : ${p2.profTable}m · Durée : ${p2.duree}min<br>
-    GPS : ${p2.gps} · DTR : ${dtrReel2}min
-    ${p2.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
-  </div>
-  <div style="margin-top:8px;font-size:0.8rem;color:var(--text-dim)">
-    Intervalle : ${formatMin(gd.intervalMin)} (${gd.intervalMin} min) · Type : ${gd.typeLabel}
-    ${gd.majoration !== undefined ? ` · Majoration : +${gd.majoration} min` : ''}
-  </div>`;
-}
-
-// ===================== INIT =====================
-calcSimple();
-// ===================== EXPORT PDF =====================
-
-// ===================== GRAPHIQUE 2P ONGLET DÉDIÉ =====================
 function showGraph2PTab() {
   // Juste stocker que les données 2P sont prêtes — drawMainGraph2P() sera appelé par switchTab
   // Rien d'autre : pas de manipulation display ici
@@ -2683,7 +2305,7 @@ function drawMainGraph2P() {
   }
 
   // Légende
-  const lc = document.getElementById('graph2-legend-content');
+  const lc = document.getElementById('graph2p-legend-content');
   const majInfo = gd.majoration !== undefined ? `<td>+${gd.majoration} min</td>` : '<td>—</td>';
   lc.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div><strong>Plongée 1</strong><br>
@@ -2951,6 +2573,10 @@ function exportPDF() {
 
   // ── Sauvegarde ──
   const fname = `MN90_${p1.profTable}m_${p1.duree}min_${(p1.heure||'').replace(':','')||'plongee'}.pdf`;
+  // Masquer le numéro de page automatique de jsPDF
+  doc.setFillColor(235, 240, 245);
+  doc.rect(PW - 15, PH - 10, 15, 10, 'F');
+
   doc.save(fname);
 }
 
@@ -3000,9 +2626,9 @@ function exportPDF2P() {
       ['Prof. réelle', entry.profRem < entry.profTable ? `${entry.profRem} m` : `${entry.profTable} m`],
       ['Durée fond', `${entry.duree} min`],
       ['Paliers', [
-        entry.pal15?`15m:${entry.pal15}′`:'', entry.pal12?`12m:${entry.pal12}′`:'',
-        entry.pal9?`9m:${entry.pal9}′`:'', entry.pal6?`6m:${entry.pal6}′`:'',
-        entry.pal3?`3m:${entry.pal3}′`:''].filter(Boolean).join(' ') || 'Aucun'],
+        entry.pal15?`15m: ${entry.pal15}min`:'', entry.pal12?`12m: ${entry.pal12}min`:'',
+        entry.pal9?`9m: ${entry.pal9}min`:'', entry.pal6?`6m: ${entry.pal6}min`:'',
+        entry.pal3?`3m: ${entry.pal3}min`:''].filter(Boolean).join('  ') || 'Aucun'],
       ['DTR', `${dtr} min`],
       ['GPS', entry.gps],
     ];
@@ -3083,6 +2709,10 @@ function exportPDF2P() {
   doc.setTextColor(...GREY); doc.setFontSize(6.5); doc.setFont('helvetica','italic');
   doc.text('Tables MN90-FFESSM — Document généré par le calculateur MN90 JSAS — À titre informatif uniquement', PW/2, PH-2.5, {align:'center'});
 
+  // Masquer le numéro de page automatique de jsPDF (coin bas droit)
+  doc.setFillColor(235, 240, 245);
+  doc.rect(PW - 15, PH - 10, 15, 10, 'F');
+
   const fname = `MN90_2P_${p1.profTable}m_${p2.profTable}m_${gd.typeLabel||'plongees'}.pdf`;
   doc.save(fname);
 }
@@ -3090,7 +2720,10 @@ function exportPDF2P() {
 // ===================== INITIALISATION =====================
 document.addEventListener('DOMContentLoaded', () => {
   calcSimple();
-  calcSucc();
+  // Délai pour laisser le navigateur initialiser les champs input[type=time]
+  setTimeout(() => {
+    try { calcSucc(); } catch(e) { console.error('[INIT calcSucc error]', e); }
+  }, 300);
 });
 
 </script>

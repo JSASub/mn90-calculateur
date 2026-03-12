@@ -2485,7 +2485,25 @@ function exportPDF() {
   doc.roundedRect(gx, gy, gw, gh, 2, 2, 'F');
 
   if (imgData) {
-    doc.addImage(imgData, 'PNG', gx + 1, gy + 1, gw - 2, gh - 2);
+    // Respecter le ratio du canvas pour éviter l'étirement du texte
+    const cvs = document.getElementById('mainCanvas');
+    const canvasRatio = cvs.width / cvs.height;
+    const zoneRatio = (gw - 2) / (gh - 2);
+    let imgW, imgH, imgX, imgY;
+    if (canvasRatio > zoneRatio) {
+      // Canvas plus large que la zone : caler sur la largeur
+      imgW = gw - 2;
+      imgH = imgW / canvasRatio;
+      imgX = gx + 1;
+      imgY = gy + 1 + (gh - 2 - imgH) / 2;
+    } else {
+      // Canvas plus haut que la zone : caler sur la hauteur
+      imgH = gh - 2;
+      imgW = imgH * canvasRatio;
+      imgX = gx + 1 + (gw - 2 - imgW) / 2;
+      imgY = gy + 1;
+    }
+    doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
   } else {
     doc.setTextColor(...GREY);
     doc.setFontSize(9);

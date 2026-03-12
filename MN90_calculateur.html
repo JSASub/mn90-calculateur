@@ -1310,6 +1310,57 @@ function switchTab(name) {
 // Shared state : populated by calcSimple() and calcSucc()
 window.graphData = null;
 
+function buildProfilePts(entry, startMin) {
+    const pts = [];
+    const descentTime = Math.ceil(entry.profTable / 15);
+    
+    pts.push({ t: startMin, d: 0 });
+    pts.push({ t: startMin + descentTime, d: entry.profTable });
+
+    // Profondeur de début de remontée
+    const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
+
+    // Fond plat à profTable pendant toute la durée
+    const tFondEnd = startMin + descentTime + entry.duree;
+    pts.push({ t: tFondEnd, d: entry.profTable });
+
+    // Si profRem < profTable : point de début remontée après transit oblique (hors profil principal)
+    if (remDepth < entry.profTable) {
+      const diagTime = Math.ceil((entry.profTable - remDepth) / 15);
+      pts.push({ t: tFondEnd + diagTime, d: remDepth, isRemStart: true });
+    }
+
+    // Ascent paliers
+    const paliers = [
+      { d: 15, m: entry.pal15 },
+      { d: 12, m: entry.pal12 },
+      { d: 9,  m: entry.pal9  },
+      { d: 6,  m: entry.pal6  },
+      { d: 3,  m: entry.pal3  },
+    ].filter(p => p.m > 0);
+
+    let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
+    let cur = startMin + descentTime + entry.duree;
+    const ascentTime = Math.ceil((remDepth - firstPalDepth) / 15);
+    cur += ascentTime;
+    pts.push({ t: cur, d: firstPalDepth });
+    
+    for (let i = 0; i < paliers.length; i++) {
+      cur += paliers[i].m;
+      pts.push({ t: cur, d: paliers[i].d });
+      if (i + 1 < paliers.length) {
+        const moveT = Math.ceil((paliers[i].d - paliers[i + 1].d) / 6);
+        cur += moveT;
+        pts.push({ t: cur, d: paliers[i + 1].d });
+      }
+    }
+    // final ascent to surface
+    cur += Math.ceil((paliers.length > 0 ? paliers[paliers.length - 1].d : 3) / 6);
+    pts.push({ t: cur, d: 0 });
+    
+    return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
+  }
+
 function drawMainGraph() {
   const canvas = document.getElementById('mainCanvas');
   const noData = document.getElementById('graph-no-data');
@@ -1369,53 +1420,7 @@ function drawMainGraph() {
   
   let totalMin = 0;
   
-  function buildProfilePts(entry, startMin) {
-    const pts = [];
-    const descentTime = Math.ceil(entry.profTable / 15);
-    
-    pts.push({ t: startMin, d: 0 });
-    pts.push({ t: startMin + descentTime, d: entry.profTable });
-    pts.push({ t: startMin + descentTime + entry.duree, d: entry.profTable });
-    
-    // Profondeur de début de remontée (peut être < profTable si remontée depuis moins profond)
-    const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
-    
-    // Ascent paliers
-    const paliers = [
-      { d: 15, m: entry.pal15 },
-      { d: 12, m: entry.pal12 },
-      { d: 9, m: entry.pal9 },
-      { d: 6, m: entry.pal6 },
-      { d: 3, m: entry.pal3 },
-    ].filter(p => p.m > 0);
-    
-    let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
-    // Si remontée depuis une profondeur intermédiaire, ajouter ce point
-    let cur = startMin + descentTime + entry.duree;
-    if (remDepth < entry.profTable) {
-      const toRemDepthTime = Math.ceil((entry.profTable - remDepth) / 15);
-      cur += toRemDepthTime;
-      pts.push({ t: cur, d: remDepth, isRemStart: true });
-    }
-    const ascentTime = Math.ceil((remDepth - firstPalDepth) / 15);
-    cur += ascentTime;
-    pts.push({ t: cur, d: firstPalDepth });
-    
-    for (let i = 0; i < paliers.length; i++) {
-      cur += paliers[i].m;
-      pts.push({ t: cur, d: paliers[i].d });
-      if (i + 1 < paliers.length) {
-        const moveT = Math.ceil((paliers[i].d - paliers[i + 1].d) / 6);
-        cur += moveT;
-        pts.push({ t: cur, d: paliers[i + 1].d });
-      }
-    }
-    // final ascent to surface
-    cur += Math.ceil((paliers.length > 0 ? paliers[paliers.length - 1].d : 3) / 6);
-    pts.push({ t: cur, d: 0 });
-    
-    return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
-  }
+
   
   const p1data = buildProfilePts(gd.p1, 0);
   let maxDepth = gd.p1.profTable;
@@ -1564,7 +1569,11 @@ function drawMainGraph() {
   // Durée fond bracket
   const fondStartX = tx(p1Pts[1].t);
   const fondEndX = tx(p1Pts[2].t);
-  const fondY = ty(p1.profTable) + 8;
+  // Si profil diagonal, accolade au milieu vertical entre profTable et profRem, sinon sous profTable
+  const hasDiag = p1.profRem && p1.profRem < p1.profTable;
+  const fondY = hasDiag
+    ? (ty(p1.profTable) + ty(p1.profRem)) / 2 + 8
+    : ty(p1.profTable) + 8;
   ctx.strokeStyle = C.p1line;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -1572,7 +1581,10 @@ function drawMainGraph() {
   ctx.moveTo(fondStartX, fondY - 4); ctx.lineTo(fondStartX, fondY + 4);
   ctx.moveTo(fondEndX, fondY - 4); ctx.lineTo(fondEndX, fondY + 4);
   ctx.stroke();
-  annotate((fondStartX + fondEndX) / 2, fondY, `Fond: ${p1.duree}min`, C.p1line, 'center', 0, 14);
+  const fondLabel = hasDiag
+    ? `Fond: ${p1.duree}min (${p1.profTable}m→${p1.profRem}m)`
+    : `Fond: ${p1.duree}min`;
+  annotate((fondStartX + fondEndX) / 2, fondY, fondLabel, C.p1line, 'center', 0, 14);
   
   // Descent speed annotation
   const descentMidX = tx(p1Pts[1].t / 2);
@@ -1605,6 +1617,28 @@ function drawMainGraph() {
   ctx.stroke();
   ctx.setLineDash([]);
   annotate(remonteeX, remonteeY, remLabel, C.warn, 'center', 0, -14);
+
+  // Diagonale pointillée colorée : trajet réel du plongeur de profTable → profRem pendant le fond
+  if (p1.profRem && p1.profRem < p1.profTable) {
+    const diagX0 = tx(p1Pts[1].t);          // début du fond (bas de descente)
+    const diagY0 = ty(p1.profTable);         // profondeur table
+    const diagX1 = tx(p1Pts[2].t);          // fin du fond
+    const diagY1 = ty(p1.profRem);           // profondeur remontée
+    ctx.save();
+    ctx.strokeStyle = '#7b1fa2';             // violet
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(diagX0, diagY0);
+    ctx.lineTo(diagX1, diagY1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    // Label au milieu de la diagonale
+    const midX = (diagX0 + diagX1) / 2;
+    const midY = (diagY0 + diagY1) / 2;
+    annotate(midX, midY, `trajet réel`, '#7b1fa2', 'center', 0, -10);
+  }
 
   p1data.paliers.forEach(pal => {
     // Find pts with this depth in the profile
@@ -2072,6 +2106,19 @@ function drawGraph2P() {
     ctx.beginPath(); ctx.arc(tx(remStartP1.t), ty(remStartP1.d), 4, 0, 2*Math.PI);
     ctx.fillStyle = '#f57c00'; ctx.fill();
     annotate(tx(remStartP1.t), ty(remStartP1.d), `↗ ${remP1}m`, '#f57c00', 'center', 0, -12);
+    // Diagonale pointillée trajet réel P1
+    const p1FondPt = p1data.pts[2]; // fin du fond
+    const p1StartPt = p1data.pts[1]; // bas de descente
+    ctx.save();
+    ctx.strokeStyle = '#7b1fa2';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(tx(p1StartPt.t), ty(p1StartPt.d));
+    ctx.lineTo(tx(p1FondPt.t), ty(remStartP1.d));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
   if (gd.p1.rapide && rapideStartP1) {
     annotate(tx(rapideStartP1.t)+5, ty(rapideStartP1.d), '⚡ Rapide', C.rapid, 'left', 0, -12);
@@ -2140,6 +2187,19 @@ function drawGraph2P() {
     ctx.beginPath(); ctx.arc(tx(remStartP2.t), ty(remStartP2.d), 4, 0, 2*Math.PI);
     ctx.fillStyle = '#f57c00'; ctx.fill();
     annotate(tx(remStartP2.t), ty(remStartP2.d), `↗ ${remP2}m`, '#f57c00', 'center', 0, -12);
+    // Diagonale pointillée trajet réel P2
+    const p2FondPt = p2data.pts[2];
+    const p2StartPt = p2data.pts[1];
+    ctx.save();
+    ctx.strokeStyle = '#7b1fa2';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(tx(p2StartPt.t), ty(p2StartPt.d));
+    ctx.lineTo(tx(p2FondPt.t), ty(remStartP2.d));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
   if (p2.rapide && rapideStartP2) {
     annotate(tx(rapideStartP2.t)+5, ty(rapideStartP2.d), '⚡ Rapide', C.rapid, 'left', 0, -12);

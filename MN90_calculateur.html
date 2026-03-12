@@ -1588,9 +1588,8 @@ function drawMainGraph() {
   const fondEndX = tx(p1Pts[2].t);
   // Si profil diagonal, accolade au milieu vertical entre profTable et profRem, sinon sous profTable
   const hasDiag = p1.profRem && p1.profRem < p1.profTable;
-  const fondY = hasDiag
-    ? (ty(p1.profTable) + ty(p1.profRem)) / 2 + 8
-    : ty(p1.profTable) + 8;
+  // Accolade fond : placée sous l'axe X (dans pad.bottom), pas dans la zone graphique
+  const fondY = H - pad.bottom + 14;
   ctx.strokeStyle = C.p1line;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -1598,10 +1597,8 @@ function drawMainGraph() {
   ctx.moveTo(fondStartX, fondY - 4); ctx.lineTo(fondStartX, fondY + 4);
   ctx.moveTo(fondEndX, fondY - 4); ctx.lineTo(fondEndX, fondY + 4);
   ctx.stroke();
-  const fondLabel = hasDiag
-    ? `Fond: ${p1.duree}min (${p1.profTable}m→${p1.profRem}m)`
-    : `Fond: ${p1.duree}min`;
-  annotate((fondStartX + fondEndX) / 2, fondY, fondLabel, C.p1line, 'center', 0, 14);
+  const fondLabel = hasDiag ? `Fond: ${p1.duree}min (${p1.profTable}m→${p1.profRem}m)` : `Fond: ${p1.duree}min`;
+  annotate((fondStartX + fondEndX) / 2, fondY, fondLabel, C.p1line, 'center', 0, 12);
   
   // Descent speed annotation
   const descentMidX = tx(p1Pts[1].t / 2);
@@ -1635,26 +1632,28 @@ function drawMainGraph() {
   ctx.setLineDash([]);
   annotate(remonteeX, remonteeY, remLabel, C.warn, 'center', 0, -14);
 
-  // Diagonale pointillée colorée : trajet réel du plongeur de profTable → profRem pendant le fond
+  // Diagonale pointillée : superposée sur le fond, de (debut fond, profTable) → (fin fond, profRem)
+  // X0 = début du fond, X1 = fin du fond → occupe toute la largeur du segment de fond
+  // Y0 = profTable, Y1 = profRem → diagonale visible entre les deux profondeurs
   if (p1.profRem && p1.profRem < p1.profTable) {
-    const diagX0 = tx(p1Pts[2].t);          // fin du fond (coin bas-droit)
-    const diagY0 = ty(p1.profTable);         // profondeur table
-    const diagX1 = tx(remStartPt.t);         // début remontée (après transit)
-    const diagY1 = ty(p1.profRem);           // profondeur remontée
+    const diagX0 = tx(p1Pts[1].t);   // X début du fond (bas de descente)
+    const diagY0 = ty(p1.profTable);  // Y profondeur table
+    const diagX1 = tx(p1Pts[2].t);   // X fin du fond
+    const diagY1 = ty(p1.profRem);    // Y profondeur remontée
     ctx.save();
-    ctx.strokeStyle = '#7b1fa2';             // violet
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = '#7b1fa2';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([7, 4]);
     ctx.beginPath();
     ctx.moveTo(diagX0, diagY0);
     ctx.lineTo(diagX1, diagY1);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
-    // Label au milieu de la diagonale
-    const midX = (diagX0 + diagX1) / 2;
+    // Label au milieu de la diagonale, décalé à droite pour ne pas chevaucher
+    const midX = (diagX0 + diagX1) / 2 + 20;
     const midY = (diagY0 + diagY1) / 2;
-    annotate(midX, midY, `trajet réel`, '#7b1fa2', 'center', 0, -10);
+    annotate(midX, midY, `trajet réel`, '#7b1fa2', 'left', 0, 0);
   }
 
   p1data.paliers.forEach(pal => {

@@ -764,6 +764,46 @@ function lookupEntryExact(prof, duree) {
   return lookupEntry(prof, duree);
 }
 
+// Recalcule le DTR réel si la remontée commence depuis profRem < profTable.
+// Règle MN90 : les paliers dont la profondeur est >= profRem sont supprimés.
+// Les paliers situés sous profRem ne sont jamais atteints lors de la remontée.
+// Le temps de remontée initial (fond→1er palier applicable) est aussi recalculé à 15 m/min.
+function calcDTRReel(entry, profRem) {
+  if (!profRem || profRem >= entry.profTable) return entry.dtr;
+
+  // Paliers MN90 dans l'ordre de remontée (du plus profond au plus superficiel)
+  const allPaliers = [
+    { d: 15, m: entry.pal15 },
+    { d: 12, m: entry.pal12 },
+    { d: 9,  m: entry.pal9  },
+    { d: 6,  m: entry.pal6  },
+    { d: 3,  m: entry.pal3  },
+  ];
+
+  // Paliers applicables : seulement ceux dont la profondeur est < profRem
+  const paliersActifs = allPaliers.filter(p => p.d < profRem);
+
+  // Temps de remontée fond → premier palier actif (ou surface si aucun palier)
+  const premierPalierD = paliersActifs.length > 0 ? paliersActifs[0].d : 0;
+  const tempsRemonteeInitiale = Math.ceil((profRem - premierPalierD) / 6); // 6 m/min après début remontée paliers MN90
+
+  // Temps des paliers actifs + inter-paliers à 6 m/min
+  let tempsPaliers = 0;
+  for (let i = 0; i < paliersActifs.length; i++) {
+    tempsPaliers += paliersActifs[i].m;
+    if (i + 1 < paliersActifs.length) {
+      tempsPaliers += Math.ceil((paliersActifs[i].d - paliersActifs[i+1].d) / 6);
+    }
+  }
+
+  // Remontée dernier palier (ou profRem si aucun) → surface à 6 m/min
+  const dernierD = paliersActifs.length > 0 ? paliersActifs[paliersActifs.length - 1].d : profRem;
+  const tempsRemonteeFinale = Math.ceil(dernierD / 6);
+
+  const dtrReel = tempsRemonteeInitiale + tempsPaliers + tempsRemonteeFinale;
+  return Math.max(dtrReel, 1);
+}
+
 function intervalToMin(h1, h2) {
   // retourne l'intervalle en minutes entre deux heures
   const [h1h, h1m] = h1.split(':').map(Number);
@@ -836,7 +876,11 @@ function renderInline(targetId, entry, heure, extraInfo) {
     {d:'3m',  m: entry.pal3},
   ];
   const hasPaliers = paliers.some(p => p.m > 0);
-  const sortie = heure ? addMinutes(heure, entry.duree + entry.dtr) : null;
+  const dtrReel = calcDTRReel(entry, entry.profRem);
+  const sortie = heure ? addMinutes(heure, entry.duree + dtrReel) : null;
+  const dtrLabel = (entry.profRem && entry.profRem < entry.profTable)
+    ? `${dtrReel} min <span style="color:var(--text-dim);font-size:0.75em">(table: ${entry.dtr})</span>`
+    : `${entry.dtr} min`;
 
   let html = `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">`;
 
@@ -868,7 +912,7 @@ function renderInline(targetId, entry, heure, extraInfo) {
 
   // DTR + heure sortie
   html += `<div style="display:flex;gap:16px;font-size:0.8rem;color:var(--text-mid)">`;
-  html += `<span>⏱ DTR : <strong>${entry.dtr} min</strong></span>`;
+  html += `<span>⏱ DTR : <strong>${dtrLabel}</strong></span>`;
   if (sortie) html += `<span>🕐 Sortie : <strong>${sortie}</strong></span>`;
   html += `</div>`;
 
@@ -883,7 +927,7 @@ function calcSimple() {
   const heure = document.getElementById('p1_heure').value || '09:00';
   const rapide = document.getElementById('p1_rapide').checked;
   const profRemInput = document.getElementById('p1_prof_rem').value;
-  const profRem = profRemInput ? parseInt(profRemInput) : prof; // si vide = prof max
+  const profRem = profRemInput ? parseInt(profRemInput) : prof;
   
   const el = document.getElementById('result-simple');
   if (!prof || !duree) { el.innerHTML = ''; return; }
@@ -893,6 +937,9 @@ function calcSimple() {
     el.innerHTML = `<div class="alert danger">⚠ Aucune entrée dans la table pour ${prof}m / ${duree}min. Vérifiez les limites MN90.</div>`;
     return;
   }
+  
+  const profRemFinal = (profRem && profRem < entry.profTable) ? profRem : entry.profTable;
+  entry.profRem = profRemFinal; // attach to entry for use in renderInline
   
   let html = '';
   
@@ -932,6 +979,11 @@ function calcSimple() {
     {depth: '3 m', mins: entry.pal3},
   ];
 
+  const dtrReel = calcDTRReel(entry, profRemFinal);
+  const dtrReelLabel = (profRemFinal < entry.profTable)
+    ? `${dtrReel} min <small style="color:var(--text-dim)">(table: ${entry.dtr})</small>`
+    : `${entry.dtr} min`;
+
   html += `<div class="card">
     <div class="card-title">Résultat <span class="badge">${entry.profTable}m / ${entry.duree}min</span></div>
     
@@ -945,8 +997,8 @@ function calcSimple() {
         <span class="result-value accent">${entry.duree} min</span>
       </div>
       <div class="result-row">
-        <span class="result-label">DTR total</span>
-        <span class="result-value accent">${entry.dtr} min</span>
+        <span class="result-label">DTR réel</span>
+        <span class="result-value accent">${dtrReelLabel}</span>
       </div>
       <div class="result-row">
         <span class="result-label">GPS</span>
@@ -954,7 +1006,7 @@ function calcSimple() {
       </div>
       <div class="result-row">
         <span class="result-label">Heure sortie eau</span>
-        <span class="result-value accent">${addMinutes(heure, entry.duree + entry.dtr)}</span>
+        <span class="result-value accent">${addMinutes(heure, entry.duree + dtrReel)}</span>
       </div>
     </div>
 
@@ -977,7 +1029,6 @@ function calcSimple() {
   renderInline('result-simple-inline', entry, heure, null);
 
   // Update shared graph data
-  const profRemFinal = (profRem && profRem <= prof) ? profRem : prof;
   window.graphData = {
     type: 'simple',
     p1: { ...entry, heure, profRem: profRemFinal }
@@ -995,8 +1046,8 @@ function calcSucc() {
   const p2_rapide = document.getElementById('s_p2_rapide').checked;
   const p1_profRemInput = document.getElementById('s_p1_prof_rem').value;
   const p2_profRemInput = document.getElementById('s_p2_prof_rem').value;
-  const p1_profRem = p1_profRemInput ? parseInt(p1_profRemInput) : p1_prof;
-  const p2_profRem = p2_profRemInput ? parseInt(p2_profRemInput) : p2_prof;
+  const p1_profRem = p1_profRemInput ? parseInt(p1_profRemInput) : null;
+  const p2_profRem = p2_profRemInput ? parseInt(p2_profRemInput) : null;
 
   const intEl = document.getElementById('intervalle-info');
   const resEl = document.getElementById('result-succ');
@@ -1007,10 +1058,16 @@ function calcSucc() {
   const p1_entry = lookupEntry(p1_prof, p1_duree);
   if (!p1_entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P1 dans la table.</div>'; return; }
   
+  // Attacher profRem à p1_entry pour renderInline
+  const p1RemFinal = (p1_profRem && p1_profRem < p1_entry.profTable) ? p1_profRem : p1_entry.profTable;
+  p1_entry.profRem = p1RemFinal;
+  const p1DtrReel = calcDTRReel(p1_entry, p1RemFinal);
+
   // Résultat P1 inline
   renderInline('result-p1-inline', p1_entry, p1_heure, null);
 
-  const sortieP1 = addMinutes(p1_heure, p1_entry.duree + p1_entry.dtr);
+  // Sortie P1 basée sur DTR réel (pas DTR table)
+  const sortieP1 = addMinutes(p1_heure, p1_entry.duree + p1DtrReel);
   const intervalMin = intervalToMin(sortieP1, p2_heure);
   const intervalLabel = intervalToLabel(intervalMin);
   
@@ -1043,9 +1100,9 @@ function calcSucc() {
     const dureeTotal = p1_duree + intervalMin + p2_duree;
     const entry = lookupEntry(profMax, dureeTotal);
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
-    const p1RemC = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
-    const p2RemC = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
-    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemC }, p2: { ...entry, profRem: p2RemC }, intervalMin, typeLabel: 'Consécutives' };
+    const p2RemC = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
+    entry.profRem = p2RemC;
+    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal }, p2: { ...entry, profRem: p2RemC }, intervalMin, typeLabel: 'Consécutives' };
     renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`);
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
@@ -1059,9 +1116,9 @@ function calcSucc() {
     // Indépendante
     const entry = lookupEntry(p2_prof, p2_duree);
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P2 dans la table.</div>'; return; }
-    const p1RemI = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
-    const p2RemI = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
-    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemI }, p2: { ...entry, profRem: p2RemI }, intervalMin, typeLabel: 'Indépendante' };
+    const p2RemI = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
+    entry.profRem = p2RemI;
+    window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal }, p2: { ...entry, profRem: p2RemI }, intervalMin, typeLabel: 'Indépendante' };
     renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)');
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     return;
@@ -1084,8 +1141,8 @@ function calcSucc() {
   const p2_entry = lookupEntry(p2_prof, dureeFictive);
   if (!p2_entry) { resEl.innerHTML = '<div class="alert danger">Durée fictive hors table P2. Plongée trop profonde ou longue.</div>'; return; }
   
-  const p1RemS = (p1_profRem && p1_profRem < p1_prof) ? p1_profRem : p1_prof;
-  const p2RemS = (p2_profRem && p2_profRem < p2_prof) ? p2_profRem : p2_prof;
+  const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;
+  p2_entry.profRem = p2RemS;
   window.graphData = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemS }, p2: { ...p2_entry, profRem: p2RemS }, intervalMin, majoration, typeLabel: 'Successives' };
   
   renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`);

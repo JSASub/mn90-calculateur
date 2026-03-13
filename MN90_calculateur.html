@@ -507,7 +507,7 @@ footer {
   </header>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('calcul')">🤿 Plongée simple</button>
+    <button class="tab active" onclick="switchTab('calcul')">🤿 1 Plongée</button>
     <button class="tab" onclick="switchTab('graphique')">📈 Graphique P1</button>
     <button class="tab" onclick="switchTab('successives')">🔁 2 Plongées</button>
     <button class="tab" id="tab-graphique2p" onclick="switchTab('graphique2p')">📈 Graphique 2P</button>
@@ -893,7 +893,7 @@ function getMajoration(n2, prof) {
 }
 
 // ===================== HELPER RÉSULTAT INLINE =====================
-function renderInline(targetId, entry, heure, extraInfo, rapide) {
+function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
   const el = document.getElementById(targetId);
   if (!el || !entry) return;
   const paliers = [
@@ -903,7 +903,8 @@ function renderInline(targetId, entry, heure, extraInfo, rapide) {
   ];
   const hasPaliers = paliers.some(p => p.m > 0);
   const dtrReel = calcDTRReel(entry, entry.profRem);
-  const sortie = heure ? addMinutes(heure, entry.duree + dtrReel) : null;
+  const dureeEffective = (dureeReelle !== undefined && dureeReelle !== null) ? dureeReelle : entry.duree;
+  const sortie = heure ? addMinutes(heure, dureeEffective + dtrReel) : null;
   const dtrLabel = (entry.profRem && entry.profRem < entry.profTable)
     ? `${dtrReel} min <span style="color:var(--text-dim);font-size:0.75em">(table: ${entry.dtr})</span>`
     : `${entry.dtr} min`;
@@ -1269,7 +1270,7 @@ function calcSucc() {
   p2_entry.profRem = p2RemS;
   window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...p2_entry, heure: p2_heure, profRem: p2RemS, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, majoration, n2, typeLabel: 'Successives' };
   
-  renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide);
+  renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide, p2_duree);
 
   const steps = [
     {label: 'GPS P1', value: p1_entry.gps},

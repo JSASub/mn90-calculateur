@@ -796,8 +796,20 @@ function lookupEntry(prof, duree) {
   const tableProfFound = tableDepts.find(p => p >= prof);
   if (!tableProfFound) return null;
   
+  // Durée table INFÉRIEURE OU ÉGALE à la durée réelle (plongée simple)
   const rows = MN90_DATA.filter(r => r.prof === tableProfFound).sort((a,b) => b.duree - a.duree);
   const entry = rows.find(r => r.duree <= duree);
+  return entry ? { ...entry, profTable: tableProfFound } : null;
+}
+
+function lookupEntryFictif(prof, dureeFictive) {
+  // Pour les successives : durée table SUPÉRIEURE OU ÉGALE à la durée fictive
+  const tableDepts = [...new Set(MN90_DATA.map(r => r.prof))].sort((a,b) => a-b);
+  const tableProfFound = tableDepts.find(p => p >= prof);
+  if (!tableProfFound) return null;
+  
+  const rows = MN90_DATA.filter(r => r.prof === tableProfFound).sort((a,b) => a.duree - b.duree);
+  const entry = rows.find(r => r.duree >= dureeFictive);
   return entry ? { ...entry, profTable: tableProfFound } : null;
 }
 
@@ -1198,7 +1210,7 @@ function calcSucc() {
     // Consécutives
     const profMax = Math.max(p1_prof, p2_prof);
     const dureeTotal = p1_duree + intervalMin + p2_duree;
-    const entry = lookupEntry(profMax, dureeTotal);
+    const entry = lookupEntryFictif(profMax, dureeTotal);
     if (!entry) { resEl.innerHTML = '<div class="alert danger">Plongées consécutives : hors table.</div>'; return; }
     const p2RemC = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemC;
@@ -1250,7 +1262,7 @@ function calcSucc() {
   if (majoration === null || majoration === undefined) { resEl.innerHTML = '<div class="alert danger">Impossible de calculer la majoration (Tableau II).</div>'; return; }
   
   const dureeFictive = p2_duree + majoration;
-  const p2_entry = lookupEntry(p2_prof, dureeFictive);
+  const p2_entry = lookupEntryFictif(p2_prof, dureeFictive);
   if (!p2_entry) { resEl.innerHTML = '<div class="alert danger">Durée fictive hors table P2. Plongée trop profonde ou longue.</div>'; return; }
   
   const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;

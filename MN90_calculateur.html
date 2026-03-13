@@ -938,6 +938,53 @@ function renderInline(targetId, entry, heure, extraInfo, rapide) {
   el.innerHTML = html;
 }
 
+// ===================== VALIDATION LIMITES MN90 =====================
+function validateMN90(prof, duree, label) {
+  const alerts = [];
+  if (!prof || !duree) return alerts;
+
+  // 1. Profondeur hors limites
+  if (prof < 6) {
+    alerts.push({ level: 'warn', msg: `${label} : profondeur ${prof}m inférieure à 6m (limite basse MN90). Table 6m utilisée.` });
+  }
+  if (prof > 65) {
+    alerts.push({ level: 'danger', msg: `${label} : profondeur ${prof}m dépasse 65m — hors table MN90. Calcul impossible.` });
+    return alerts; // inutile de continuer
+  }
+
+  // 2. Trouver la profondeur table
+  const tableDepts = [...new Set(MN90_DATA.map(r => r.prof))].sort((a,b) => a-b);
+  const profTable = tableDepts.find(p => p >= prof);
+  if (!profTable) {
+    alerts.push({ level: 'danger', msg: `${label} : profondeur ${prof}m hors table MN90.` });
+    return alerts;
+  }
+
+  // 3. Durée max pour cette profondeur table
+  const rows = MN90_DATA.filter(r => r.prof === profTable);
+  const dureeMax = Math.max(...rows.map(r => r.duree));
+  const dureeMin = Math.min(...rows.map(r => r.duree));
+
+  if (duree > dureeMax) {
+    alerts.push({ level: 'danger', msg: `${label} : durée ${duree}min dépasse le maximum MN90 pour ${profTable}m (max = ${dureeMax}min). Hors table.` });
+  }
+  if (duree < dureeMin) {
+    alerts.push({ level: 'warn', msg: `${label} : durée ${duree}min inférieure au minimum MN90 pour ${profTable}m (min = ${dureeMin}min). Première ligne utilisée.` });
+  }
+
+  // 4. Profondeur arrondie vers le haut
+  if (profTable > prof) {
+    alerts.push({ level: 'info', msg: `${label} : profondeur ${prof}m → table ${profTable}m utilisée.` });
+  }
+
+  return alerts;
+}
+
+function renderValidationAlerts(alertsList) {
+  if (!alertsList.length) return '';
+  return alertsList.map(a => `<div class="alert ${a.level}">⚠ ${a.msg}</div>`).join('');
+}
+
 // ===================== CALCUL SIMPLE =====================
 function calcSimple() {
   const prof = parseInt(document.getElementById('p1_prof').value) || 0;
@@ -949,12 +996,23 @@ function calcSimple() {
   
   const el = document.getElementById('result-simple');
   if (!prof || !duree) { el.innerHTML = ''; return; }
-  
+
+  // Validation limites MN90
+  const validAlerts = validateMN90(prof, duree, 'Plongée');
+  const hasDanger = validAlerts.some(a => a.level === 'danger');
+  if (hasDanger) {
+    el.innerHTML = renderValidationAlerts(validAlerts);
+    return;
+  }
+
   const entry = lookupEntry(prof, duree);
   if (!entry) {
     el.innerHTML = `<div class="alert danger">⚠ Aucune entrée dans la table pour ${prof}m / ${duree}min. Vérifiez les limites MN90.</div>`;
     return;
   }
+
+  // Alertes non bloquantes (warn/info) affichées avant les résultats
+  let validHtml = renderValidationAlerts(validAlerts);
   
   const profRemFinal = (profRem && profRem < entry.profTable) ? profRem : entry.profTable;
   entry.profRem = profRemFinal; // attach to entry for use in renderInline
@@ -1045,7 +1103,7 @@ function calcSimple() {
   
   html += `</div></div>`;
   
-  el.innerHTML = html;
+  el.innerHTML = validHtml + html;
   
   // Résultat inline (paliers + GPS directement sous les données)
   renderInline('result-simple-inline', entry, heure, null);
@@ -1053,7 +1111,7 @@ function calcSimple() {
   // Update shared graph data
   window.graphDataSimple = {
     type: 'simple',
-    p1: { ...entry, heure, profRem: profRemFinal, rapide }
+    p1: { ...entry, heure, profRem: profRemFinal, rapide, dtrReel: calcDTRReel(entry, profRemFinal) }
   };
 
   // Afficher bouton PDF
@@ -1082,7 +1140,18 @@ function calcSucc() {
   const resEl = document.getElementById('result-succ');
   
   if (!p1_prof || !p1_duree || !p2_prof || !p2_duree) { intEl.innerHTML = ''; resEl.innerHTML = ''; return; }
-  
+
+  // Validation limites MN90
+  const validAlertsP1 = validateMN90(p1_prof, p1_duree, 'P1');
+  const validAlertsP2 = validateMN90(p2_prof, p2_duree, 'P2');
+  const allValidAlerts = [...validAlertsP1, ...validAlertsP2];
+  const hasDangerSucc = allValidAlerts.some(a => a.level === 'danger');
+  if (hasDangerSucc) {
+    resEl.innerHTML = renderValidationAlerts(allValidAlerts);
+    return;
+  }
+  let validHtmlSucc = renderValidationAlerts(allValidAlerts);
+
   // Calculer intervalle
   const p1_entry = lookupEntry(p1_prof, p1_duree);
   if (!p1_entry) { resEl.innerHTML = '<div class="alert danger">Aucune entrée P1 dans la table.</div>'; return; }
@@ -1116,7 +1185,8 @@ function calcSucc() {
     </div>`;
   }
 
-  intEl.innerHTML = `
+  if (validHtmlSucc) intEl.innerHTML = validHtmlSucc;
+  intEl.innerHTML += `
     <div style="display:flex;gap:16px;font-size:0.82rem;flex-wrap:wrap">
       <span>🕐 Sortie P1 : <strong>${sortieP1}</strong></span>
       <span>⏱ Intervalle : <strong>${intervalLabel}</strong></span>
@@ -1184,7 +1254,7 @@ function calcSucc() {
   
   const p2RemS = (p2_profRem && p2_profRem < p2_entry.profTable) ? p2_profRem : p2_entry.profTable;
   p2_entry.profRem = p2RemS;
-  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...p2_entry, heure: p2_heure, profRem: p2RemS, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, majoration, typeLabel: 'Successives' };
+  window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...p2_entry, heure: p2_heure, profRem: p2RemS, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, majoration, n2, typeLabel: 'Successives' };
   
   renderInline('result-p2-inline', p2_entry, p2_heure, `Successives — majoration : +${majoration} min · durée fictive : ${dureeFictive} min`, p2_rapide);
 
@@ -1746,7 +1816,11 @@ function drawMainGraph() {
   ctx.fillStyle = C.dtr;
   ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`DTR: ${p1.dtr}min`, (dtrStartX + dtrEndX) / 2, dtrY + 10);
+  const dtrReelP1 = p1.dtrReel !== undefined ? p1.dtrReel : p1.dtr;
+  const dtrLabelP1 = dtrReelP1 !== p1.dtr
+    ? `DTR: ${dtrReelP1}min (table: ${p1.dtr}min)`
+    : `DTR: ${p1.dtr}min`;
+  ctx.fillText(dtrLabelP1, (dtrStartX + dtrEndX) / 2, dtrY + 10);
   
   // Heures P1
   if (p1.heure) {
@@ -1901,7 +1975,7 @@ function drawMainGraph() {
       Prof. table : <strong>${p1leg.profTable} m</strong><br>
       Durée fond : <strong>${p1leg.duree} min</strong><br>
       Paliers : <strong>${formatPaliers(p1leg)}</strong><br>
-      DTR : <strong>${p1leg.dtr} min</strong><br>
+      DTR : <strong>${p1leg.dtrReel !== undefined ? p1leg.dtrReel : p1leg.dtr} min</strong>${p1leg.dtrReel !== undefined && p1leg.dtrReel !== p1leg.dtr ? ` <span style="color:var(--text-dim);font-weight:normal">(table : ${p1leg.dtr} min)</span>` : ''}<br>
       GPS : <strong style="color:${p1leg.gps==='*'?'#b71c1c':'#00695c'}">${p1leg.gps}</strong><br>
       ${p1leg.heure ? `Immersion : <strong>${p1leg.heure}</strong><br>Sortie : <strong>${addMinutes(p1leg.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
     </div>
@@ -2315,7 +2389,10 @@ function drawMainGraph2P() {
   ctx.stroke();
   ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
   const dtrReel1 = calcDTRReel(gd.p1, gd.p1.profRem);
-  ctx.fillText(`DTR P1: ${dtrReel1}min`, (dtr1sx+dtr1ex)/2, dtrY1+10);
+  const dtrP1Label = dtrReel1 !== gd.p1.dtr
+    ? `DTR P1: ${dtrReel1}min (t: ${gd.p1.dtr}min)`
+    : `DTR P1: ${dtrReel1}min`;
+  ctx.fillText(dtrP1Label, (dtr1sx+dtr1ex)/2, dtrY1+10);
 
   // ── PLONGÉE 2 ──
   const p2 = gd.p2;
@@ -2396,7 +2473,10 @@ function drawMainGraph2P() {
   ctx.stroke();
   ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
   const dtrReel2 = calcDTRReel(p2, p2.profRem);
-  ctx.fillText(`DTR P2: ${dtrReel2}min`, (dtr2sx+dtr2ex)/2, dtrY1+10);
+  const dtrP2Label = dtrReel2 !== p2.dtr
+    ? `DTR P2: ${dtrReel2}min (t: ${p2.dtr}min)`
+    : `DTR P2: ${dtrReel2}min`;
+  ctx.fillText(dtrP2Label, (dtr2sx+dtr2ex)/2, dtrY1+10);
 
 
 
@@ -2413,15 +2493,18 @@ function drawMainGraph2P() {
   lc.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <div><strong>Plongée 1</strong><br>
     Prof. table : ${gd.p1.profTable}m · Durée : ${gd.p1.dureeReelle || gd.p1.duree}min<br>
-    GPS : ${gd.p1.gps} · DTR : ${calcDTRReel(gd.p1, gd.p1.profRem)}min
+    GPS : ${gd.p1.gps}<br>
+    DTR : <strong>${calcDTRReel(gd.p1, gd.p1.profRem)}min</strong>${calcDTRReel(gd.p1, gd.p1.profRem) !== gd.p1.dtr ? ` <span style="color:var(--text-dim);font-size:0.78rem">(table : ${gd.p1.dtr}min)</span>` : ''}
     ${gd.p1.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
     <div><strong>Plongée 2</strong><br>
     Prof. table : ${p2.profTable}m · Durée : ${p2.dureeReelle || p2.duree}min<br>
-    GPS : ${p2.gps} · DTR : ${dtrReel2}min
+    GPS : ${p2.gps}<br>
+    DTR : <strong>${dtrReel2}min</strong>${dtrReel2 !== p2.dtr ? ` <span style="color:var(--text-dim);font-size:0.78rem">(table : ${p2.dtr}min)</span>` : ''}
     ${p2.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
   </div>
   <div style="margin-top:8px;font-size:0.8rem;color:var(--text-dim)">
     Intervalle : ${formatMin(gd.intervalMin)} (${gd.intervalMin} min) · Type : ${gd.typeLabel}
+    ${gd.n2 !== undefined ? ` · Azote résiduel N₂ : <strong>${gd.n2}</strong>` : ''}
     ${gd.majoration !== undefined ? `<br>Majoration P2 : <strong>+${gd.majoration} min</strong>
     · Durée fictive : <strong>${(p2.dureeReelle || p2.duree) + gd.majoration} min</strong>
     · Durée fictive table : <strong>${p2.duree} min</strong>` : ''}

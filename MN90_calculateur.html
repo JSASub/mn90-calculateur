@@ -944,12 +944,9 @@ function validateMN90(prof, duree, label) {
   if (!prof || !duree) return alerts;
 
   // 1. Profondeur hors limites
-  if (prof < 6) {
-    alerts.push({ level: 'warn', msg: `${label} : profondeur ${prof}m inférieure à 6m (limite basse MN90). Table 6m utilisée.` });
-  }
   if (prof > 65) {
     alerts.push({ level: 'danger', msg: `${label} : profondeur ${prof}m dépasse 65m — hors table MN90. Calcul impossible.` });
-    return alerts; // inutile de continuer
+    return alerts;
   }
 
   // 2. Trouver la profondeur table
@@ -960,7 +957,12 @@ function validateMN90(prof, duree, label) {
     return alerts;
   }
 
-  // 3. Durée max pour cette profondeur table
+  // 3. Profondeur arrondie — n'afficher que si l'écart est notable (> 0, et pas cas < 6m)
+  if (profTable > prof && prof >= 6) {
+    alerts.push({ level: 'info', msg: `${label} : profondeur ${prof}m → table ${profTable}m utilisée.` });
+  }
+
+  // 4. Durée max/min pour cette profondeur table
   const rows = MN90_DATA.filter(r => r.prof === profTable);
   const dureeMax = Math.max(...rows.map(r => r.duree));
   const dureeMin = Math.min(...rows.map(r => r.duree));
@@ -970,11 +972,6 @@ function validateMN90(prof, duree, label) {
   }
   if (duree < dureeMin) {
     alerts.push({ level: 'warn', msg: `${label} : durée ${duree}min inférieure au minimum MN90 pour ${profTable}m (min = ${dureeMin}min). Première ligne utilisée.` });
-  }
-
-  // 4. Profondeur arrondie vers le haut
-  if (profTable > prof) {
-    alerts.push({ level: 'info', msg: `${label} : profondeur ${prof}m → table ${profTable}m utilisée.` });
   }
 
   return alerts;

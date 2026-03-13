@@ -2690,32 +2690,51 @@ function exportPDF() {
   offCanvas.style.display = 'none';
   document.body.appendChild(offCanvas);
 
-  // Copier le style de drawMainGraph mais sur offCanvas
-  const origCanvas = document.getElementById('mainCanvas');
-
-  // Forcer le redraw sur mainCanvas s'il n'est pas visible
+  // Forcer le rendu sur le canvas principal même si l'onglet est caché
+  const mainCvs = document.getElementById('mainCanvas');
   const panel = document.getElementById('panel-graphique');
   const wasHidden = !panel.classList.contains('active');
-  if (wasHidden) {
-    panel.style.visibility = 'hidden';
-    panel.style.position = 'absolute';
-    panel.classList.add('active');
-  }
+
+  // Sauvegarder état original
+  const origDisplay  = panel.style.display;
+  const origVis      = panel.style.visibility;
+  const origPos      = panel.style.position;
+  const origCvsW     = mainCvs.width;
+  const origCvsH     = mainCvs.height;
+
+  // Rendre le panel accessible (hors écran mais avec dimensions)
+  panel.style.display    = 'block';
+  panel.style.visibility = 'hidden';
+  panel.style.position   = 'fixed';
+  panel.style.left       = '-9999px';
+  if (!panel.classList.contains('active')) panel.classList.add('active');
+
+  // Forcer les dimensions du canvas
+  mainCvs.width  = 900;
+  mainCvs.height = 480;
+  console.log('[PDF] avant drawMainGraph - canvas:', mainCvs.width, mainCvs.height, '- graphDataSimple:', !!window.graphDataSimple);
+
   drawMainGraph();
 
-  // Capturer le canvas principal
+  console.log('[PDF] après drawMainGraph - canvas:', mainCvs.width, mainCvs.height);
+
+  // Capturer
   let imgData = null;
   try {
-    imgData = document.getElementById('mainCanvas').toDataURL('image/png');
+    imgData = mainCvs.toDataURL('image/png');
+    console.log('[PDF] toDataURL OK, longueur:', imgData ? imgData.length : 0);
   } catch(e) {
-    console.warn('Canvas capture failed:', e);
+    console.warn('[PDF] Canvas capture failed:', e);
   }
 
-  if (wasHidden) {
-    panel.classList.remove('active');
-    panel.style.visibility = '';
-    panel.style.position = '';
-  }
+  // Restaurer
+  panel.style.display    = origDisplay;
+  panel.style.visibility = origVis;
+  panel.style.position   = origPos;
+  if (wasHidden) panel.classList.remove('active');
+  mainCvs.width  = origCvsW;
+  mainCvs.height = origCvsH;
+
   document.body.removeChild(offCanvas);
 
   // Positionner le graphique : x=108, y=16, w=177, h=PH-28
@@ -2875,21 +2894,37 @@ function exportPDF2P() {
   doc.setFillColor(232, 244, 253);
   doc.roundedRect(gx, gy, gw, gh, 2, 2, 'F');
 
-  // Capturer canvas2Pmain
-  const cvs = document.getElementById('canvas2Pmain');
+  // Capturer canvas2Pmain — forcer les dimensions même si l'onglet est caché
+  const cvs2Pmain = document.getElementById('canvas2Pmain');
+  const panel2P   = document.getElementById('panel-graphique2p');
+  const wasHidden2P = !panel2P.classList.contains('active');
+
+  const origDisp2P = panel2P.style.display;
+  const origVis2P  = panel2P.style.visibility;
+  const origPos2P  = panel2P.style.position;
+  const origW2P    = cvs2Pmain ? cvs2Pmain.width  : 0;
+  const origH2P    = cvs2Pmain ? cvs2Pmain.height : 0;
+
+  panel2P.style.display    = 'block';
+  panel2P.style.visibility = 'hidden';
+  panel2P.style.position   = 'fixed';
+  panel2P.style.left       = '-9999px';
+  if (!panel2P.classList.contains('active')) panel2P.classList.add('active');
+
+  if (cvs2Pmain) { cvs2Pmain.width = 900; cvs2Pmain.height = 480; }
+
+  drawMainGraph2P();
+
   let imgData = null;
-  if (cvs && cvs.width > 0) {
-    try { imgData = cvs.toDataURL('image/png'); } catch(e) {}
-  }
-  if (!imgData) {
-    // Forcer le rendu
-    const panel = document.getElementById('panel-graphique2p');
-    const wasHidden = !panel.classList.contains('active');
-    if (wasHidden) { panel.style.visibility='hidden'; panel.style.position='absolute'; panel.classList.add('active'); }
-    drawMainGraph2P();
-    if (wasHidden) { panel.classList.remove('active'); panel.style.visibility=''; panel.style.position=''; }
-    try { imgData = document.getElementById('canvas2Pmain').toDataURL('image/png'); } catch(e) {}
-  }
+  try { imgData = cvs2Pmain ? cvs2Pmain.toDataURL('image/png') : null; } catch(e) {}
+
+  // Restaurer
+  panel2P.style.display    = origDisp2P;
+  panel2P.style.visibility = origVis2P;
+  panel2P.style.position   = origPos2P;
+  panel2P.style.left       = '';
+  if (wasHidden2P) panel2P.classList.remove('active');
+  if (cvs2Pmain) { cvs2Pmain.width = origW2P; cvs2Pmain.height = origH2P; }
 
   if (imgData) {
     const cvs2 = document.getElementById('canvas2Pmain');

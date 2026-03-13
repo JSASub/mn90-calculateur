@@ -1440,7 +1440,8 @@ function buildProfilePts(entry, startMin) {
     const remDepth = (entry.profRem && entry.profRem < entry.profTable) ? entry.profRem : entry.profTable;
 
     // Fond plat à profTable pendant toute la durée
-    const tFondEnd = startMin + descentTime + entry.duree;
+    // La descente compte pour 0 : tFondEnd = startMin + duree
+    const tFondEnd = startMin + entry.duree;
     pts.push({ t: tFondEnd, d: entry.profTable });
 
     // Si profRem < profTable : point isRemStart pour la diagonale graphique et le cercle orange
@@ -1461,7 +1462,7 @@ function buildProfilePts(entry, startMin) {
 
     let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
     // cur part de tFondEnd + diagTime si profRem < profTable
-    let cur = startMin + descentTime + entry.duree;
+    let cur = startMin + entry.duree;
     if (remDepth < entry.profTable) {
       cur += Math.ceil((entry.profTable - remDepth) / 15);
     }
@@ -1478,8 +1479,7 @@ function buildProfilePts(entry, startMin) {
         pts.push({ t: cur, d: paliers[i + 1].d });
       }
     }
-    // final ascent to surface
-    cur += Math.ceil((paliers.length > 0 ? paliers[paliers.length - 1].d : 3) / 6);
+    // final ascent to surface (pas de temps supplémentaire : inclus dans DTR table)
     pts.push({ t: cur, d: 0 });
     
     return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
@@ -2081,7 +2081,8 @@ function drawMainGraph2P() {
 
     // Fond plat : durée réelle si fournie, sinon durée table
     const dureeeFond = dureeAffichee || entry.duree;
-    const tFondEnd = startMin + descentTime + dureeeFond;
+    // La descente compte pour 0 : tFondEnd = startMin + dureeeFond
+    const tFondEnd = startMin + dureeeFond;
     pts.push({ t: tFondEnd, d: entry.profTable });
 
     // Si profRem < profTable : on ajoute remDepth dans pts (profil plein passe par ce point)
@@ -2114,8 +2115,8 @@ function drawMainGraph2P() {
         pts.push({ t: cur, d: paliers[i+1].d });
       }
     }
-    const lastD = paliers.length > 0 ? paliers[paliers.length-1].d : 0;
-    if (lastD > 0) { cur += Math.ceil(lastD / 6); pts.push({ t: cur, d: 0 }); }
+    // Remontée finale depuis dernier palier : pas de temps supplémentaire (inclus dans DTR table)
+    pts.push({ t: cur, d: 0 });
 
     return { pts, paliers, descentTime, firstPalDepth, endMin: cur, remStartPt, tFondEnd };
   }
@@ -2523,6 +2524,7 @@ function exportPDF() {
   // A4 paysage : 297 x 210 mm
   const PW = 297, PH = 210;
   const M = 12; // marge
+  const HDR_H = 22; // hauteur bandeau header
 
   const gd = window.graphDataSimple;
   const p1 = gd.p1;
@@ -2557,7 +2559,6 @@ function exportPDF() {
 
   // ── Zone gauche : paramètres (col 0..95) ──
   const colW = 90;
-  const HDR_H = 22;
   let y = 28;
 
   // Titre zone
@@ -2712,19 +2713,14 @@ function exportPDF() {
   // Forcer les dimensions du canvas
   mainCvs.width  = 900;
   mainCvs.height = 480;
-  console.log('[PDF] avant drawMainGraph - canvas:', mainCvs.width, mainCvs.height, '- graphDataSimple:', !!window.graphDataSimple);
-
   drawMainGraph();
-
-  console.log('[PDF] après drawMainGraph - canvas:', mainCvs.width, mainCvs.height);
 
   // Capturer
   let imgData = null;
   try {
     imgData = mainCvs.toDataURL('image/png');
-    console.log('[PDF] toDataURL OK, longueur:', imgData ? imgData.length : 0);
   } catch(e) {
-    console.warn('[PDF] Canvas capture failed:', e);
+    console.warn('Canvas capture failed:', e);
   }
 
   // Restaurer

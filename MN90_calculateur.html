@@ -1617,7 +1617,11 @@ function buildProfilePts(entry, startMin) {
         pts.push({ t: cur, d: paliers[i + 1].d });
       }
     }
-    // final ascent to surface (pas de temps supplémentaire : inclus dans DTR table)
+    // Remontée finale depuis dernier palier vers surface
+    if (paliers.length > 0) {
+      const lastPalDepth = paliers[paliers.length - 1].d;
+      cur += Math.ceil(lastPalDepth / 6);
+    }
     pts.push({ t: cur, d: 0 });
     
     return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
@@ -2271,7 +2275,11 @@ function drawMainGraph2P(exportScale) {
         pts.push({ t: cur, d: paliers[i+1].d });
       }
     }
-    // Remontée finale depuis dernier palier : pas de temps supplémentaire (inclus dans DTR table)
+    // Remontée finale depuis dernier palier vers surface
+    if (paliers.length > 0) {
+      const lastPalDepth = paliers[paliers.length - 1].d;
+      cur += Math.ceil(lastPalDepth / 6);
+    }
     pts.push({ t: cur, d: 0 });
 
     return { pts, paliers, descentTime, firstPalDepth, endMin: cur, remStartPt, tFondEnd };

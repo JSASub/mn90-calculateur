@@ -260,7 +260,7 @@ header p {
 }
 .result-row:last-child { border-bottom: none; }
 .result-label {
-  color: var(--text-dim);
+  color: #1a3a5c;
   font-family: var(--sans);
   font-size: 0.72rem;
   font-weight: 700;
@@ -270,9 +270,9 @@ header p {
 .result-value {
   font-family: var(--mono);
   font-weight: 700;
-  color: var(--text);
+  color: #0a1e30;
 }
-.result-value.accent { color: var(--cyan); font-size: 1.05rem; }
+.result-value.accent { color: #0d2540; font-size: 1.05rem; font-weight: 700; }
 .result-value.gps {
   font-family: var(--display);
   font-size: 1.9rem;
@@ -361,24 +361,24 @@ header p {
   font-weight: 500;
 }
 .alert.warn {
-  background: rgba(249,115,22,0.1);
-  border: 1px solid rgba(249,115,22,0.4);
-  color: #fbbf24;
+  background: rgba(255,248,235,0.7);
+  border: 1px solid #c07020;
+  color: #7b3800;
 }
 .alert.danger {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.4);
-  color: #f87171;
+  background: rgba(255,235,235,0.7);
+  border: 1px solid #cc3333;
+  color: #7b0000;
 }
 .alert.info {
-  background: rgba(59,130,246,0.1);
-  border: 1px solid rgba(59,130,246,0.4);
-  color: #93c5fd;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid #4a7aaa;
+  color: #0d2540;
 }
 .alert.success {
-  background: rgba(34,197,94,0.08);
-  border: 1px solid rgba(34,197,94,0.35);
-  color: #86efac;
+  background: rgba(235,255,240,0.7);
+  border: 1px solid #2a7a40;
+  color: #0d4020;
 }
 
 /* ── CANVAS ── */
@@ -915,9 +915,9 @@ function lookupEntry(prof, duree) {
   const tableProfFound = tableDepts.find(p => p >= prof);
   if (!tableProfFound) return null;
   
-  // Durée table INFÉRIEURE OU ÉGALE à la durée réelle (plongée simple)
-  const rows = MN90_DATA.filter(r => r.prof === tableProfFound).sort((a,b) => b.duree - a.duree);
-  const entry = rows.find(r => r.duree <= duree);
+  // Durée table SUPÉRIEURE OU ÉGALE à la durée réelle (MN90 : prendre la ligne au-dessus)
+  const rows = MN90_DATA.filter(r => r.prof === tableProfFound).sort((a,b) => a.duree - b.duree);
+  const entry = rows.find(r => r.duree >= duree);
   return entry ? { ...entry, profTable: tableProfFound } : null;
 }
 
@@ -944,7 +944,13 @@ function lookupEntryExact(prof, duree) {
 // (vitesse de remontée MN90 = 15 m/min avant les paliers).
 function calcDTRReel(entry, profRem) {
   if (!profRem || profRem >= entry.profTable) return entry.dtr;
-  const gainMin = Math.ceil((entry.profTable - profRem) / 15);
+  // Profondeur du premier palier (le plus profond parmi ceux > 0)
+  const palierDepths = [15, 12, 9, 6, 3];
+  const premierPalier = palierDepths.find(d => entry['pal' + d] > 0) || 3;
+  // Gain = différence de remontée fond→premier palier (MN90 : 15m/min, ceil)
+  const remTable = Math.ceil((entry.profTable - premierPalier) / 15);
+  const remReel  = Math.ceil((profRem       - premierPalier) / 15);
+  const gainMin  = remTable - remReel;
   return Math.max(entry.dtr - gainMin, 1);
 }
 
@@ -1025,7 +1031,7 @@ function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
   const dureeEffective = (dureeReelle !== undefined && dureeReelle !== null) ? dureeReelle : entry.duree;
   const sortie = heure ? addMinutes(heure, dureeEffective + dtrReel) : null;
   const dtrLabel = (entry.profRem && entry.profRem < entry.profTable)
-    ? `${dtrReel} min <span style="color:var(--text-dim);font-size:0.75em">(table: ${entry.dtr})</span>`
+    ? `${dtrReel} min <span style="color:#1a3a5c;font-size:0.75em;font-weight:600">(table: ${entry.dtr})</span>`
     : `${entry.dtr} min`;
 
   let html = `<div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">`;
@@ -1058,8 +1064,8 @@ function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
 
   // DTR + heure sortie
   html += `<div style="display:flex;gap:16px;font-size:0.8rem;color:var(--text-mid)">`;
-  html += `<span style="color:var(--text-mid)">⏱ DTR : <strong style="color:#8b1a2a">${dtrLabel}</strong></span>`;
-  if (sortie) html += `<span style="color:var(--text-mid)">🕐 Sortie : <strong style="color:var(--cyan);font-size:1.05em">${sortie}</strong></span>`;
+  html += `<span style="color:#1a3a5c">⏱ DTR : <strong style="color:#8b1a2a">${dtrLabel}</strong></span>`;
+  if (sortie) html += `<span style="color:#1a3a5c">🕐 Sortie : <strong style="color:#0d2540;font-size:1.05em">${sortie}</strong></span>`;
   html += `</div>`;
 
   if (rapide) {
@@ -1194,7 +1200,7 @@ function calcSimple() {
 
   const dtrReel = calcDTRReel(entry, profRemFinal);
   const dtrReelLabel = (profRemFinal < entry.profTable)
-    ? `${dtrReel} min <small style="color:var(--text-dim)">(table: ${entry.dtr})</small>`
+    ? `${dtrReel} min <small style="color:#1a3a5c;font-weight:600">(table: ${entry.dtr})</small>`
     : `${entry.dtr} min`;
 
   html += `<div class="card">
@@ -1219,7 +1225,7 @@ function calcSimple() {
       </div>
       <div class="result-row">
         <span class="result-label">Heure sortie eau</span>
-        <span class="result-value accent">${addMinutes(heure, entry.duree + dtrReel)}</span>
+        <span class="result-value accent">${addMinutes(heure, duree + dtrReel)}</span>
       </div>
     </div>
 
@@ -1239,12 +1245,12 @@ function calcSimple() {
   el.innerHTML = validHtml + html;
   
   // Résultat inline (paliers + GPS directement sous les données)
-  renderInline('result-simple-inline', entry, heure, null);
+  renderInline('result-simple-inline', entry, heure, null, rapide, duree);
 
   // Update shared graph data
   window.graphDataSimple = {
     type: 'simple',
-    p1: { ...entry, heure, profRem: profRemFinal, rapide, dtrReel: calcDTRReel(entry, profRemFinal) }
+    p1: { ...entry, heure, profRem: profRemFinal, rapide, dtrReel: calcDTRReel(entry, profRemFinal), dureeReelle: duree }
   };
 
   // Afficher bouton PDF
@@ -1295,10 +1301,10 @@ function calcSucc() {
   const p1DtrReel = calcDTRReel(p1_entry, p1RemFinal);
 
   // Résultat P1 inline
-  renderInline('result-p1-inline', p1_entry, p1_heure, null, p1_rapide);
+  renderInline('result-p1-inline', p1_entry, p1_heure, null, p1_rapide, p1_duree);
 
   // Sortie P1 basée sur DTR réel (pas DTR table)
-  const sortieP1 = addMinutes(p1_heure, p1_entry.duree + p1DtrReel);
+  const sortieP1 = addMinutes(p1_heure, p1_duree + p1DtrReel);
   const intervalMin = intervalToMin(sortieP1, p2_heure);
   const intervalLabel = intervalToLabel(intervalMin);
   
@@ -1335,7 +1341,7 @@ function calcSucc() {
     const p2RemC = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemC;
     window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...entry, heure: p2_heure, profRem: p2RemC, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, typeLabel: 'Consécutives' };
-    renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`, p2_rapide);
+    renderInline('result-p2-inline', entry, p2_heure, `Consécutives — durée fictive : ${dureeTotal} min`, p2_rapide, p2_duree);
     renderResult(resEl, entry, [
       {label: 'Type', value: 'CONSÉCUTIVES'},
       {label: 'Profondeur max', value: profMax + ' m'},
@@ -1357,7 +1363,7 @@ function calcSucc() {
     const p2RemI = (p2_profRem && p2_profRem < entry.profTable) ? p2_profRem : entry.profTable;
     entry.profRem = p2RemI;
     window.graphData2P = { type: 'double', p1: { ...p1_entry, heure: p1_heure, profRem: p1RemFinal, rapide: p1_rapide, dureeReelle: p1_duree }, p2: { ...entry, heure: p2_heure, profRem: p2RemI, rapide: p2_rapide, dureeReelle: p2_duree }, intervalMin, typeLabel: 'Indépendante' };
-    renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)', p2_rapide);
+    renderInline('result-p2-inline', entry, p2_heure, 'Indépendante (intervalle > 12h)', p2_rapide, p2_duree);
     renderResult(resEl, entry, [{label: 'Type', value: 'INDÉPENDANTE (> 12h)'}], null);
     showGraph2PTab();
     // Redessiner l'onglet Graphique 2P si actif, sinon marquer dirty
@@ -1573,7 +1579,8 @@ function buildProfilePts(entry, startMin) {
 
     // Fond plat à profTable pendant toute la durée
     // La descente compte pour 0 : tFondEnd = startMin + duree
-    const tFondEnd = startMin + entry.duree;
+    const dureeeFond = entry.dureeReelle || entry.duree;
+    const tFondEnd = startMin + dureeeFond;
     pts.push({ t: tFondEnd, d: entry.profTable });
 
     // Si profRem < profTable : point isRemStart pour la diagonale graphique et le cercle orange
@@ -1594,10 +1601,9 @@ function buildProfilePts(entry, startMin) {
 
     let firstPalDepth = paliers.length > 0 ? paliers[0].d : 3;
     // cur part de tFondEnd + diagTime si profRem < profTable
-    let cur = startMin + entry.duree;
-    if (remDepth < entry.profTable) {
-      cur += Math.ceil((entry.profTable - remDepth) / 15);
-    }
+    let cur = startMin + dureeeFond;
+    // Ne PAS ajouter diagTime à cur : le gain profTable→profRem est déjà inclus dans le DTR réel
+    // diagTime sert uniquement à positionner le point isRemStart sur le graphique
     const ascentTime = Math.ceil((remDepth - firstPalDepth) / 15);
     cur += ascentTime;
     pts.push({ t: cur, d: firstPalDepth });
@@ -1885,7 +1891,9 @@ function drawMainGraph(exportScale) {
   if (p1.profRem && p1.profRem < p1.profTable) {
     const diagX0 = tx(p1Pts[1].t);   // X début du fond (bas de descente)
     const diagY0 = ty(p1.profTable);  // Y profondeur table
-    const diagX1 = tx(p1Pts[2].t);   // X fin du fond
+    // X fin : point isRemStart (tFondEnd + diagTime), pas simplement tFondEnd
+    const remStartPt = p1Pts.find(p => p.isRemStart);
+    const diagX1 = remStartPt ? tx(remStartPt.t) : tx(p1Pts[2].t);
     const diagY1 = ty(p1.profRem);    // Y profondeur remontée
     ctx.save();
     ctx.strokeStyle = '#c084fc';
@@ -2121,7 +2129,7 @@ function drawMainGraph(exportScale) {
       Prof. table : <strong>${p1leg.profTable} m</strong><br>
       Durée fond : <strong>${p1leg.duree} min</strong><br>
       Paliers : <strong>${formatPaliers(p1leg)}</strong><br>
-      DTR : <strong>${p1leg.dtrReel !== undefined ? p1leg.dtrReel : p1leg.dtr} min</strong>${p1leg.dtrReel !== undefined && p1leg.dtrReel !== p1leg.dtr ? ` <span style="color:var(--text-dim);font-weight:normal">(table : ${p1leg.dtr} min)</span>` : ''}<br>
+      DTR : <strong>${p1leg.dtrReel !== undefined ? p1leg.dtrReel : p1leg.dtr} min</strong>${p1leg.dtrReel !== undefined && p1leg.dtrReel !== p1leg.dtr ? ` <span style="color:#1a3a5c;font-weight:600">(table : ${p1leg.dtr} min)</span>` : ''}<br>
       GPS : <strong style="color:${p1leg.gps==='*'?'#ef4444':'#10b981'}">${p1leg.gps}</strong><br>
       ${p1leg.heure ? `Immersion : <strong>${p1leg.heure}</strong><br>Sortie : <strong>${addMinutes(p1leg.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
     </div>
@@ -2239,14 +2247,14 @@ function drawMainGraph2P(exportScale) {
     let remStartPt = null;
     if (remDepth < entry.profTable) {
       const diagTime = Math.ceil((entry.profTable - remDepth) / 15);
-      cur += diagTime;
-      remStartPt = { t: cur, d: remDepth };
-      pts.push({ t: cur, d: remDepth, isRemStart: true });
+      // diagTime positionne le point graphique mais n'avance PAS cur (déjà inclus dans le gain DTR)
+      remStartPt = { t: tFondEnd + diagTime, d: remDepth };
+      pts.push({ t: tFondEnd + diagTime, d: remDepth, isRemStart: true });
     }
 
     // Remontée remDepth → premier palier
     const ascentSpeed = entry.rapide ? 50 : 15;
-    const ascentTime = Math.max(1, Math.ceil((remDepth - (firstPalDepth || 0)) / ascentSpeed));
+    const ascentTime = Math.ceil((remDepth - (firstPalDepth || 0)) / ascentSpeed);
     cur += ascentTime;
     if (paliers.length > 0) {
       pts.push({ t: cur, d: firstPalDepth, isRapide: !!entry.rapide });
@@ -2644,12 +2652,12 @@ function drawMainGraph2P(exportScale) {
     <div><strong>Plongée 1</strong><br>
     Prof. table : ${gd.p1.profTable}m · Durée : ${gd.p1.dureeReelle || gd.p1.duree}min<br>
     GPS : ${gd.p1.gps}<br>
-    DTR : <strong>${calcDTRReel(gd.p1, gd.p1.profRem)}min</strong>${calcDTRReel(gd.p1, gd.p1.profRem) !== gd.p1.dtr ? ` <span style="color:var(--text-dim);font-size:0.78rem">(table : ${gd.p1.dtr}min)</span>` : ''}
+    DTR : <strong>${calcDTRReel(gd.p1, gd.p1.profRem)}min</strong>${calcDTRReel(gd.p1, gd.p1.profRem) !== gd.p1.dtr ? ` <span style="color:#1a3a5c;font-weight:600;font-size:0.78rem">(table : ${gd.p1.dtr}min)</span>` : ''}
     ${gd.p1.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
     <div><strong>Plongée 2</strong><br>
     Prof. table : ${p2.profTable}m · Durée : ${p2.dureeReelle || p2.duree}min<br>
     GPS : ${p2.gps}<br>
-    DTR : <strong>${dtrReel2}min</strong>${dtrReel2 !== p2.dtr ? ` <span style="color:var(--text-dim);font-size:0.78rem">(table : ${p2.dtr}min)</span>` : ''}
+    DTR : <strong>${dtrReel2}min</strong>${dtrReel2 !== p2.dtr ? ` <span style="color:#1a3a5c;font-weight:600;font-size:0.78rem">(table : ${p2.dtr}min)</span>` : ''}
     ${p2.rapide ? ' · <span style="color:'+C.rapid+'">⚡ Rapide</span>' : ''}</div>
   </div>
   <div style="margin-top:8px;font-size:0.8rem;color:var(--text-dim)">

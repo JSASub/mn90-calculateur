@@ -7,29 +7,53 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #d8e0ea;
-  --bg2: #c8d4e0;
-  --panel: #ffffff;
-  --panel2: #eaeff5;
-  --navy: #0d2540;
-  --navy-light: #1a3a5c;
-  --accent: #0d47a1;
-  --accent2: #005b8a;
-  --teal: #00695c;
-  --warn: #bf360c;
-  --danger: #b71c1c;
-  --gps-star: #b71c1c;
-  --success: #1b5e20;
-  --text: #080f18;
-  --text-mid: #18304a;
-  --text-dim: #2d4d65;
-  --border: #9ab0c5;
-  --border-strong: #6a8fa8;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', sans-serif;
-  --display: 'Bebas Neue', sans-serif;
-  --shadow: 0 2px 8px rgba(26,58,92,0.10);
-  --shadow-md: 0 4px 16px rgba(26,58,92,0.13);
+  /* Palette principale — bleu abyssal */
+  --bg:            #8eafc4;
+  --bg2:           #7a9db5;
+  --panel:         #d4e6f2;
+  --panel2:        #bfd6e8;
+  --panel3:        #7a9db5;
+
+  /* Accents */
+  --cyan:          #00d4ff;
+  --cyan-dim:      #0099bb;
+  --cyan-glow:     rgba(0,212,255,0.15);
+  --amber:         #f59e0b;
+  --amber-dim:     #b57309;
+  --amber-glow:    rgba(245,158,11,0.15);
+  --teal:          #10b981;
+  --teal-glow:     rgba(16,185,129,0.15);
+  --danger:        #ef4444;
+  --danger-glow:   rgba(239,68,68,0.15);
+  --warn:          #f97316;
+  --warn-glow:     rgba(249,115,22,0.15);
+  --success:       #22c55e;
+
+  /* Navy sombre hérité */
+  --navy:          #0d2540;
+  --navy-light:    #1a3a5c;
+  --accent:        #3b82f6;
+  --accent2:       #1d4ed8;
+
+  /* Textes */
+  --text:          #081828;
+  --text-mid:      #1a3650;
+  --text-dim:      #3a6080;
+
+  /* Bordures */
+  --border:        #5a8aa8;
+  --border-bright: #3d6d8e;
+  --border-cyan:   rgba(0,212,255,0.3);
+
+  /* Typographie */
+  --mono:    'IBM Plex Mono', 'Courier New', monospace;
+  --sans:    'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --display: 'Bebas Neue', 'Impact', sans-serif;
+
+  /* Ombres */
+  --shadow:    0 2px 12px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 24px rgba(0,0,0,0.5);
+  --shadow-cyan: 0 0 20px rgba(0,212,255,0.1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,44 +64,64 @@ body {
   font-family: var(--sans);
   min-height: 100vh;
   overflow-x: hidden;
+  /* Subtle grid pattern */
+  background-image:
+    linear-gradient(rgba(13,37,64,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13,37,64,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .container { max-width: 960px; margin: 0 auto; padding: 0 16px 60px; }
 
-/* HEADER */
+/* ── HEADER ── */
 header {
-  text-align: center;
-  padding: 30px 0 22px;
-  border-bottom: 2px solid var(--navy);
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-  border-radius: 0 0 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  gap: 12px;
+  background: linear-gradient(135deg, #0d2540 0%, #1a3a5c 60%, #0d2540 100%);
+  border-bottom: 2px solid var(--border-cyan);
+  border-radius: 0 0 16px 16px;
   margin-left: -16px;
   margin-right: -16px;
-  padding-left: 16px;
-  padding-right: 16px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.6), 0 0 40px rgba(0,212,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  height: 200px;
+  background: radial-gradient(ellipse, rgba(0,212,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
 }
 header h1 {
   font-family: var(--display);
-  font-size: clamp(2rem, 6vw, 3.6rem);
-  letter-spacing: 0.08em;
-  color: #ffffff;
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  letter-spacing: 0.1em;
+  color: #fff;
   line-height: 1;
+  text-shadow: 0 0 30px rgba(0,212,255,0.4);
 }
 header p {
   font-family: var(--mono);
-  font-size: 0.72rem;
-  color: rgba(255,255,255,0.7);
+  font-size: 0.68rem;
+  color: var(--cyan-dim);
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  margin-top: 7px;
+  margin-top: 6px;
 }
 
-/* TABS */
+/* ── TABS ── */
 .tabs {
   display: flex;
   gap: 3px;
-  background: var(--panel);
+  background: var(--panel2);
   border-radius: 10px;
   padding: 4px;
   margin-bottom: 20px;
@@ -95,91 +139,110 @@ header p {
   font-weight: 500;
   cursor: pointer;
   border-radius: 7px;
-  transition: all 0.18s;
+  transition: all 0.2s;
   text-align: center;
 }
-.tab:hover { color: var(--accent); background: var(--bg2); }
+.tab:hover {
+  color: var(--cyan);
+  background: rgba(0,212,255,0.07);
+}
 .tab.active {
-  background: var(--navy);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 1px 4px rgba(26,58,92,0.2);
+  background: linear-gradient(135deg, #0d2540 0%, #1a3a5c 100%);
+  color: var(--cyan);
+  font-weight: 700;
+  border: 1px solid var(--border-cyan);
+  box-shadow: 0 0 12px rgba(0,212,255,0.15), inset 0 1px 0 rgba(0,212,255,0.1);
 }
 
-/* PANELS */
+/* ── PANELS ── */
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* CARDS */
+/* ── CARDS ── */
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 18px 20px;
   margin-bottom: 14px;
   box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  opacity: 0.6;
+}
+
 .card-title {
   font-family: var(--sans);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--cyan);
   margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-left: 3px solid var(--accent);
+  letter-spacing: 0.06em;
+  border-left: 3px solid var(--cyan);
   padding-left: 10px;
 }
 .card-title .badge {
-  background: var(--bg2);
-  border: 1px solid var(--border);
+  background: rgba(0,212,255,0.12);
+  border: 1px solid var(--border-cyan);
   border-radius: 4px;
   font-family: var(--mono);
   font-size: 0.65rem;
-  padding: 2px 7px;
-  color: var(--text-mid);
-  font-weight: 400;
+  padding: 2px 8px;
+  color: var(--cyan);
+  font-weight: 600;
   text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
 }
 
-/* FORM GRID */
+/* ── FORM ── */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media(max-width:500px) { .form-grid { grid-template-columns: 1fr; } }
 
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field label {
   font-family: var(--sans);
-  font-size: 0.76rem;
+  font-size: 0.73rem;
   font-weight: 600;
   color: var(--text-mid);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .field input, .field select {
   background: var(--panel2);
   border: 1.5px solid var(--border);
-  border-radius: 6px;
+  border-radius: 7px;
   color: var(--text);
   font-family: var(--mono);
-  font-size: 0.95rem;
-  padding: 8px 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 9px 13px;
   outline: none;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   width: 100%;
   -webkit-appearance: none;
   appearance: none;
 }
 .field input:focus, .field select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(21,101,192,0.12);
-  background: #fff;
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
+  background: rgba(0,212,255,0.05);
+  color: #fff;
 }
+.field input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 0.85rem; }
 .field select { cursor: pointer; }
 
-/* RESULT BOX */
+/* ── RESULT BOX ── */
 .result-box {
   background: var(--panel2);
   border: 1px solid var(--border);
@@ -196,27 +259,40 @@ header p {
   font-size: 0.88rem;
 }
 .result-row:last-child { border-bottom: none; }
-.result-label { color: var(--text-dim); font-family: var(--sans); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.result-value { font-family: var(--mono); font-weight: 600; color: var(--text); }
-.result-value.accent { color: var(--accent); font-size: 1.05rem; }
+.result-label {
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.result-value {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text);
+}
+.result-value.accent { color: var(--cyan); font-size: 1.05rem; }
 .result-value.gps {
   font-family: var(--display);
-  font-size: 1.8rem;
+  font-size: 1.9rem;
   letter-spacing: 0.05em;
   color: var(--teal);
-  background: #e8f5e9;
-  border: 2px solid #a5d6a7;
+  background: rgba(16,185,129,0.1);
+  border: 2px solid rgba(16,185,129,0.4);
   border-radius: 6px;
   padding: 0 12px;
   line-height: 1.5;
+  text-shadow: 0 0 16px rgba(16,185,129,0.5);
 }
 .result-value.gps.star {
   color: var(--danger);
-  background: #ffebee;
-  border-color: #ef9a9a;
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.4);
+  text-shadow: 0 0 16px rgba(239,68,68,0.5);
 }
 
-/* PALIERS TABLE */
+/* ── PALIERS TABLE ── */
 .paliers-table {
   width: 100%;
   border-collapse: collapse;
@@ -225,13 +301,14 @@ header p {
   margin-top: 10px;
 }
 .paliers-table th {
-  background: var(--navy);
-  color: #fff;
-  padding: 7px 10px;
+  background: linear-gradient(135deg, #071525, #0d2036);
+  color: var(--cyan);
+  padding: 8px 10px;
   text-align: center;
   font-size: 0.72rem;
-  letter-spacing: 0.05em;
-  border: 1px solid var(--navy-light);
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border);
+  text-transform: uppercase;
 }
 .paliers-table td {
   padding: 7px 10px;
@@ -239,34 +316,40 @@ header p {
   border: 1px solid var(--border);
   color: var(--text);
   background: var(--panel);
+  transition: background 0.15s;
 }
-.paliers-table tr:hover td { background: var(--bg2); }
+.paliers-table tr:hover td { background: rgba(0,212,255,0.06); }
 .paliers-table td.zero { color: var(--text-dim); }
-.paliers-table td.nonzero { color: var(--teal); font-weight: 700; }
+.paliers-table td.nonzero { color: var(--amber); font-weight: 700; }
 
-/* BTN */
+/* ── BUTTONS ── */
 .btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--accent);
-  border: none;
-  border-radius: 7px;
-  color: #fff;
+  background: linear-gradient(135deg, #0e3a6e, #0a2a52);
+  border: 1px solid var(--border-cyan);
+  border-radius: 8px;
+  color: var(--cyan);
   font-family: var(--sans);
   font-size: 0.82rem;
-  font-weight: 600;
-  padding: 10px 18px;
+  font-weight: 700;
+  padding: 10px 20px;
   cursor: pointer;
-  transition: background 0.18s;
+  transition: all 0.2s;
   margin-top: 12px;
+  letter-spacing: 0.04em;
 }
-.btn:hover { background: var(--navy); }
+.btn:hover {
+  background: linear-gradient(135deg, #1a5090, #0e3a6e);
+  box-shadow: 0 0 16px rgba(0,212,255,0.25);
+  color: #fff;
+}
 .btn.full { width: 100%; justify-content: center; }
 
-/* ALERT */
+/* ── ALERTS ── */
 .alert {
-  border-radius: 7px;
+  border-radius: 8px;
   padding: 11px 15px;
   margin-top: 12px;
   font-family: var(--sans);
@@ -277,24 +360,38 @@ header p {
   align-items: flex-start;
   font-weight: 500;
 }
-.alert.warn { background: #fff3e0; border: 1px solid #ffcc80; color: #bf360c; }
-.alert.danger { background: #ffebee; border: 1px solid #ef9a9a; color: #b71c1c; }
-.alert.info { background: #e3f2fd; border: 1px solid #90caf9; color: #0d47a1; }
-.alert.success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #1b5e20; }
+.alert.warn {
+  background: rgba(249,115,22,0.1);
+  border: 1px solid rgba(249,115,22,0.4);
+  color: #fbbf24;
+}
+.alert.danger {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.4);
+  color: #f87171;
+}
+.alert.info {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.4);
+  color: #93c5fd;
+}
+.alert.success {
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.35);
+  color: #86efac;
+}
 
-/* PROFILE CHART */
+/* ── CANVAS ── */
 #profileCanvas {
   width: 100%;
   height: 200px;
   border-radius: 8px;
-  background: #e8f4fd;
+  background: #061020;
   border: 1px solid var(--border);
 }
-
-/* DIVE PROFILE CONTAINER */
 .profile-container { margin-top: 14px; }
 
-/* SECTION HEADER */
+/* ── SECTION SEP ── */
 .section-sep {
   display: flex;
   align-items: center;
@@ -302,62 +399,73 @@ header p {
   margin: 18px 0 12px;
   color: var(--text-dim);
   font-family: var(--sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
-.section-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.section-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
 
-/* STEPPERS */
+/* ── STEPS ── */
 .steps-grid { display: flex; flex-direction: column; gap: 7px; }
 .step-item {
   display: flex;
   gap: 12px;
   align-items: flex-start;
   padding: 10px 14px;
-  background: var(--panel2);
-  border-radius: 7px;
-  border-left: 3px solid var(--accent);
+  background: #e8f3fa;
+  border-radius: 8px;
+  border-left: 3px solid #0d2540;
 }
 .step-num {
   font-family: var(--display);
   font-size: 1.3rem;
-  color: var(--accent);
+  color: #0d2540;
   min-width: 22px;
   line-height: 1.3;
 }
 .step-content { flex: 1; }
-.step-title { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
-.step-value { font-family: var(--mono); font-size: 0.88rem; color: var(--text); margin-top: 3px; }
-.step-value.hl { color: var(--teal); font-weight: 700; }
-
-/* SUCCESSIVE div */
-.succ-block { margin-top: 0; }
-
-/* GRID for paliers display */
-.paliers-inline {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
+.step-title {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0d2540;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
+.step-value {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: #0d2540;
+  font-weight: 600;
+  margin-top: 3px;
+}
+.step-value.hl { color: #7b1020; font-weight: 700; }
+
+/* ── PAL CHIPS ── */
+.paliers-inline { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .pal-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
   background: var(--panel2);
   border: 1.5px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   padding: 7px 12px;
   min-width: 58px;
+  transition: border-color 0.2s;
 }
-.pal-chip .depth { font-family: var(--sans); font-size: 0.68rem; font-weight: 600; color: var(--text-dim); }
-.pal-chip .mins { font-family: var(--display); font-size: 1.5rem; color: var(--teal); line-height: 1.1; }
-.pal-chip .mins.zero { color: var(--border-strong); }
-.pal-chip .unit { font-family: var(--sans); font-size: 0.62rem; color: var(--text-dim); }
+.pal-chip .depth { font-family: var(--sans); font-size: 0.68rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.04em; }
+.pal-chip .mins { font-family: var(--display); font-size: 1.5rem; color: #8b1a2a; line-height: 1.1; text-shadow: 0 0 6px rgba(139,26,42,0.3); }
+.pal-chip .mins.zero { color: var(--border-bright); text-shadow: none; }
+.pal-chip .unit { font-family: var(--sans); font-size: 0.6rem; color: var(--text-dim); }
 
-/* TABLEAUX view */
+/* ── MN90 TABLES ── */
 .table-scroll { overflow-x: auto; }
 .mn90-table {
   border-collapse: collapse;
@@ -366,48 +474,52 @@ header p {
   min-width: 100%;
 }
 .mn90-table th {
-  background: var(--navy);
-  color: #fff;
+  background: linear-gradient(135deg, #060e1a, #0d2036);
+  color: var(--cyan);
   padding: 7px 9px;
-  border: 1px solid var(--navy-light);
+  border: 1px solid var(--border);
   text-align: center;
   white-space: nowrap;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .mn90-table td {
   padding: 5px 8px;
   border: 1px solid var(--border);
   text-align: center;
   white-space: nowrap;
-  color: var(--text);
+  color: var(--text-mid);
   background: var(--panel);
+  transition: background 0.12s;
 }
 .mn90-table tr:nth-child(even) td { background: var(--panel2); }
-.mn90-table tr:hover td { background: #dbeafe; }
+.mn90-table tr:hover td { background: rgba(0,212,255,0.07); color: var(--text); }
 .mn90-table .gps-cell {
   font-family: var(--display);
   font-size: 1rem;
   color: var(--teal);
   font-weight: 700;
+  text-shadow: 0 0 8px rgba(16,185,129,0.4);
 }
-.mn90-table .gps-cell.star { color: var(--danger); }
-.mn90-table .prof-cell { color: var(--accent); font-weight: 700; }
+.mn90-table .gps-cell.star { color: var(--danger); text-shadow: 0 0 8px rgba(239,68,68,0.4); }
+.mn90-table .prof-cell { color: var(--cyan); font-weight: 700; }
 
-/* METHOD */
+/* ── METHOD ── */
 .method-block {
   margin-bottom: 12px;
   padding: 14px 16px;
   background: var(--panel2);
-  border-radius: 8px;
-  border-left: 4px solid var(--accent);
+  border-radius: 9px;
+  border-left: 4px solid var(--cyan-dim);
 }
 .method-block h3 {
   font-family: var(--sans);
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--navy);
+  color: var(--cyan);
   margin-bottom: 10px;
 }
 .method-row {
@@ -419,22 +531,13 @@ header p {
   border-bottom: 1px solid var(--border);
 }
 .method-row:last-child { border-bottom: none; }
-.method-row .key { color: var(--text-dim); font-family: var(--sans); font-size: 0.76rem; font-weight: 700; }
-.method-row .val { color: var(--text); }
+.method-row .key { color: var(--text-dim); font-family: var(--sans); font-size: 0.73rem; font-weight: 700; }
+.method-row .val { color: var(--text-mid); }
 
-/* LOADING */
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-dim);
-  font-family: var(--sans);
-  font-size: 0.85rem;
-}
-
-/* DIVIDER line */
+/* ── HR ── */
 hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
-/* Toggle rapidité remontée */
+/* ── TOGGLE ── */
 .toggle-row {
   display: flex;
   align-items: center;
@@ -443,18 +546,19 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
   border-top: 1px solid var(--border);
   margin-top: 8px;
 }
-.toggle-label { font-family: var(--sans); font-size: 0.78rem; font-weight: 600; color: var(--text-mid); }
-.toggle {
-  position: relative;
-  width: 44px;
-  height: 24px;
+.toggle-label {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-mid);
 }
+.toggle { position: relative; width: 44px; height: 24px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider {
   position: absolute;
   inset: 0;
   background: var(--border);
-  border: 1.5px solid var(--border-strong);
+  border: 1.5px solid var(--border-bright);
   border-radius: 24px;
   cursor: pointer;
   transition: 0.2s;
@@ -462,35 +566,50 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .toggle-slider::before {
   content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
-  left: 3px;
-  top: 3px;
+  width: 16px; height: 16px;
+  left: 3px; top: 3px;
   background: #fff;
   border-radius: 50%;
   transition: 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
-.toggle input:checked + .toggle-slider { background: #ff8a65; border-color: var(--warn); }
-.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle input:checked + .toggle-slider {
+  background: rgba(249,115,22,0.3);
+  border-color: var(--warn);
+  box-shadow: 0 0 8px rgba(249,115,22,0.3);
+}
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); background: var(--warn); }
 
-/* Footer */
+/* ── FOOTER ── */
 footer {
   text-align: center;
   padding: 20px 0 0;
   font-family: var(--sans);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   border-top: 1px solid var(--border);
   margin-top: 36px;
 }
 
-/* RESPONSIVE */
+/* ── RESPONSIVE ── */
 @media(max-width:600px) {
   .paliers-table td, .paliers-table th { padding: 5px 6px; font-size: 0.75rem; }
   .mn90-table td, .mn90-table th { font-size: 0.65rem; padding: 4px 5px; }
   .method-row { grid-template-columns: 90px 1fr; }
 }
+
+/* ── SUCC BLOCK ── */
+.succ-block { margin-top: 0; }
+
+/* ── LOADING ── */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-dim);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -919,9 +1038,9 @@ function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
   if (hasPaliers) {
     paliers.forEach(p => {
       const zero = p.m === 0;
-      html += `<div style="display:flex;flex-direction:column;align-items:center;background:${zero?'var(--panel2)':'#fff3e0'};border:1px solid ${zero?'var(--border)':'#e65100'};border-radius:6px;padding:4px 8px;min-width:44px">
-        <span style="font-size:0.65rem;font-weight:700;color:${zero?'var(--text-dim)':'#e65100'}">${p.d}</span>
-        <span style="font-size:1rem;font-weight:700;color:${zero?'var(--text-dim)':'#bf360c'};line-height:1.1">${p.m}</span>
+      html += `<div style="display:flex;flex-direction:column;align-items:center;background:${zero?'var(--panel2)':'rgba(150,20,40,0.12)'};border:1px solid ${zero?'var(--border)':'rgba(150,20,40,0.6)'};border-radius:6px;padding:4px 8px;min-width:44px">
+        <span style="font-size:0.65rem;font-weight:700;color:${zero?'var(--text-dim)':'#8b1a2a'}">${p.d}</span>
+        <span style="font-size:1rem;font-weight:700;color:${zero?'var(--text-dim)':'#8b1a2a'};line-height:1.1">${p.m}</span>
         <span style="font-size:0.6rem;color:var(--text-dim)">min</span>
       </div>`;
     });
@@ -929,9 +1048,9 @@ function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
     html += `<span style="font-size:0.82rem;color:var(--teal);font-weight:600">Aucun palier</span>`;
   }
   // GPS badge
-  const gpsColor = entry.gps === '*' ? '#b71c1c' : '#00695c';
-  const gpsBg = entry.gps === '*' ? '#ffebee' : '#e8f5e9';
-  html += `<div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;background:${gpsBg};border:2px solid ${gpsColor};border-radius:8px;padding:4px 12px;min-width:52px">
+  const gpsColor = entry.gps === '*' ? '#ef4444' : '#10b981';
+  const gpsBg = entry.gps === '*' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)';
+  html += `<div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;background:${gpsBg};border:2px solid ${gpsColor};border-radius:8px;padding:4px 12px;box-shadow:0 0 10px ${gpsColor}40;min-width:52px">
     <span style="font-size:0.62rem;font-weight:700;color:${gpsColor};text-transform:uppercase">GPS</span>
     <span style="font-size:1.4rem;font-weight:700;color:${gpsColor};line-height:1.1">${entry.gps}</span>
   </div>`;
@@ -939,8 +1058,8 @@ function renderInline(targetId, entry, heure, extraInfo, rapide, dureeReelle) {
 
   // DTR + heure sortie
   html += `<div style="display:flex;gap:16px;font-size:0.8rem;color:var(--text-mid)">`;
-  html += `<span>⏱ DTR : <strong>${dtrLabel}</strong></span>`;
-  if (sortie) html += `<span>🕐 Sortie : <strong>${sortie}</strong></span>`;
+  html += `<span style="color:var(--text-mid)">⏱ DTR : <strong style="color:#8b1a2a">${dtrLabel}</strong></span>`;
+  if (sortie) html += `<span style="color:var(--text-mid)">🕐 Sortie : <strong style="color:var(--cyan);font-size:1.05em">${sortie}</strong></span>`;
   html += `</div>`;
 
   if (rapide) {
@@ -1194,8 +1313,8 @@ function calcSucc() {
       ✅ <strong style="color:#2e7d32">INDÉPENDANTE</strong> — intervalle > 12 h : P2 calculée comme une plongée simple.
     </div>`;
   } else {
-    typeBadge = `<div style="margin-top:8px;padding:8px 12px;background:#e3f2fd;border-left:3px solid #0d47a1;border-radius:4px;font-size:0.82rem">
-      🔁 <strong style="color:#0d47a1">SUCCESSIVES</strong> — majoration appliquée via Tableau I → Tableau II.
+    typeBadge = `<div style="margin-top:8px;padding:8px 12px;background:rgba(59,130,246,0.1);border-left:3px solid #3b82f6;border-radius:4px;font-size:0.82rem">
+      🔁 <strong style="color:#3b82f6">SUCCESSIVES</strong> — majoration appliquée via Tableau I → Tableau II.
     </div>`;
   }
 
@@ -1498,7 +1617,7 @@ function buildProfilePts(entry, startMin) {
     return { pts, paliers, descentTime, firstPalDepth, endMin: cur };
   }
 
-function drawMainGraph() {
+function drawMainGraph(exportScale) {
   const canvas = document.getElementById('mainCanvas');
   const noData = document.getElementById('graph-no-data');
   const legend = document.getElementById('graph-legend');
@@ -1515,11 +1634,13 @@ function drawMainGraph() {
   legend.style.display = 'block';
   
   const gd = window.graphDataSimple;
-  const W = canvas.offsetWidth || 700;
-  const H = 360;
-  canvas.width = W;
-  canvas.height = H;
+  const _scale = exportScale || 1;
+  const W = exportScale ? 900 : (canvas.offsetWidth || 700);
+  const H = exportScale ? 480 : 360;
+  canvas.width  = W * _scale;
+  canvas.height = H * _scale;
   const ctx = canvas.getContext('2d');
+  if (_scale !== 1) ctx.scale(_scale, _scale);
   
   const pad = { top: 60, right: 24, bottom: 55, left: 52 };
   const cw = W - pad.left - pad.right;
@@ -1529,23 +1650,23 @@ function drawMainGraph() {
   
   // Colors
   const C = {
-    bg: '#e8f4fd',
-    grid: 'rgba(21,101,192,0.12)',
-    axis: '#18304a',
-    p1line: '#0d47a1',
-    p1fill: 'rgba(13,71,161,0.15)',
-    p2line: '#00695c',
-    p2fill: 'rgba(0,105,92,0.13)',
-    palier: '#bf360c',
+    bg: '#eaf4fc',
+    grid: 'rgba(13,37,64,0.10)',
+    axis: '#2a5070',
+    p1line: '#3b82f6',
+    p1fill: 'rgba(59,130,246,0.18)',
+    p2line: '#10b981',
+    p2fill: 'rgba(16,185,129,0.15)',
+    palier: '#8b1a2a',
     palierFill: 'rgba(191,54,12,0.13)',
     surface: '#6a8fa8',
     label: '#0a1520',
-    labelBg: 'rgba(255,255,255,0.88)',
-    gps: '#00695c',
-    warn: '#bf360c',
-    hour: '#1a3a5c',
-    speed: '#7b1fa2',
-    dtr: '#e65100',
+    labelBg: 'rgba(255,255,255,0.90)',
+    gps: '#10b981',
+    warn: '#f97316',
+    hour: '#2a5070',
+    speed: '#c084fc',
+    dtr: '#8b1a2a',
   };
   
   // Build timeline from graphData
@@ -1634,7 +1755,7 @@ function drawMainGraph() {
   
   // --- Depth axis labels ---
   ctx.fillStyle = C.axis;
-  ctx.font = 'bold 10px IBM Plex Mono, monospace';
+  ctx.font = `bold ${10 * _scale}px IBM Plex Mono, monospace`;
   ctx.textAlign = 'right';
   depthTicks.forEach(d => {
     ctx.fillText(d + 'm', pad.left - 5, ty(d) + 4);
@@ -1642,7 +1763,7 @@ function drawMainGraph() {
   
   // --- Time axis labels ---
   ctx.textAlign = 'center';
-  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.font = `${10 * _scale}px IBM Plex Mono, monospace`;
   ctx.fillStyle = C.surface;
   for (let i = 0; i <= timeTicks; i++) {
     const tVal = Math.round((maxTime / timeTicks) * i);
@@ -1655,19 +1776,20 @@ function drawMainGraph() {
   ctx.translate(13, pad.top + ch / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
+  ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
   ctx.fillStyle = C.axis;
   ctx.fillText('Profondeur (m)', 0, 0);
   ctx.restore();
   ctx.textAlign = 'center';
-  ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
+  ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
   ctx.fillStyle = C.axis;
-  ctx.fillText('Durée (min)', pad.left + cw / 2, H - 8);
+  ctx.textAlign = 'left';
+  ctx.fillText('Durée (min)', pad.left, H - 8);
   
   // --- Annotation helper ---
   function annotate(x, y, text, color, align = 'center', offsetX = 0, offsetY = -10) {
     const ax = x + offsetX, ay = y + offsetY;
-    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+    ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
     const tw = ctx.measureText(text).width;
     const bpad = 3;
     let bx = ax;
@@ -1718,7 +1840,12 @@ function drawMainGraph() {
   ctx.moveTo(fondEndX, fondY - 4); ctx.lineTo(fondEndX, fondY + 4);
   ctx.stroke();
   const fondLabel = hasDiag ? `Fond: ${p1.duree}min (${p1.profTable}m→${p1.profRem}m)` : `Fond: ${p1.duree}min`;
-  annotate((fondStartX + fondEndX) / 2, fondY, fondLabel, C.p1line, 'center', 0, 12);
+  ctx.save();
+  ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
+  ctx.fillStyle = C.p1line;
+  ctx.textAlign = 'center';
+  ctx.fillText(fondLabel, (fondStartX + fondEndX) / 2, H - 8);
+  ctx.restore();
   
   // Descent speed annotation
   const descentMidX = tx(p1Pts[1].t / 2);
@@ -1761,7 +1888,7 @@ function drawMainGraph() {
     const diagX1 = tx(p1Pts[2].t);   // X fin du fond
     const diagY1 = ty(p1.profRem);    // Y profondeur remontée
     ctx.save();
-    ctx.strokeStyle = '#7b1fa2';
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 2.5;
     ctx.setLineDash([7, 4]);
     ctx.beginPath();
@@ -1773,7 +1900,7 @@ function drawMainGraph() {
     // Label au milieu de la diagonale, décalé à droite pour ne pas chevaucher
     const midX = (diagX0 + diagX1) / 2 + 20;
     const midY = (diagY0 + diagY1) / 2;
-    annotate(midX, midY, `trajet réel`, '#7b1fa2', 'left', 0, 0);
+    annotate(midX, midY, `trajet réel`, '#c084fc', 'left', 0, 0);
   }
 
   p1data.paliers.forEach(pal => {
@@ -1814,7 +1941,7 @@ function drawMainGraph() {
   
   // GPS label P1
   const endP1X = tx(p1Pts[p1Pts.length - 1].t);
-  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
+  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', -9, -28);
   
   // DTR P1
   const dtrStartX = tx(p1Pts[2].t);
@@ -1828,13 +1955,13 @@ function drawMainGraph() {
   ctx.moveTo(dtrEndX, dtrY - 3); ctx.lineTo(dtrEndX, dtrY + 3);
   ctx.stroke();
   ctx.fillStyle = C.dtr;
-  ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+  ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
   ctx.textAlign = 'center';
   const dtrReelP1 = p1.dtrReel !== undefined ? p1.dtrReel : p1.dtr;
   const dtrLabelP1 = dtrReelP1 !== p1.dtr
     ? `DTR: ${dtrReelP1}min (table: ${p1.dtr}min)`
     : `DTR: ${p1.dtr}min`;
-  ctx.fillText(dtrLabelP1, (dtrStartX + dtrEndX) / 2, dtrY + 10);
+  ctx.fillText(dtrLabelP1, (dtrStartX + dtrEndX) / 2, dtrY + 19);
   
   // Heures P1
   if (p1.heure) {
@@ -1842,7 +1969,7 @@ function drawMainGraph() {
     const sortieX = tx(p1Pts[p1Pts.length - 1].t);
     annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -42);
     const sortieH = addMinutes(p1.heure, p1Pts[p1Pts.length - 1].t);
-    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', 0, -42);
+    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', -9, -42);
   }
   
   // --- P2 annotations ---
@@ -1937,7 +2064,12 @@ function drawMainGraph() {
     annotate(rem2X, rem2Y, rem2Label, C.warn, 'center', 0, -14);
     ctx.moveTo(f2EndX, f2Y - 4); ctx.lineTo(f2EndX, f2Y + 4);
     ctx.stroke();
-    annotate((f2StartX + f2EndX) / 2, f2Y, `Fond: ${p2.duree}min`, C.p2line, 'center', 0, 14);
+    ctx.save();
+    ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
+    ctx.fillStyle = C.p2line;
+    ctx.textAlign = 'center';
+    ctx.fillText(`Fond: ${p2.duree}min`, (f2StartX + f2EndX) / 2, H - 8);
+    ctx.restore();
     
     // P2 paliers
     p2data.paliers.forEach(pal => {
@@ -1972,17 +2104,17 @@ function drawMainGraph() {
     ctx.moveTo(dtr2EndX, dtrY - 3); ctx.lineTo(dtr2EndX, dtrY + 3);
     ctx.stroke();
     ctx.fillStyle = C.dtr;
-    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+    ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
     ctx.textAlign = 'center';
-    ctx.fillText(`DTR: ${p2.dtr}min`, (dtr2StartX + dtr2EndX) / 2, dtrY + 10);
+    ctx.fillText(`DTR: ${p2.dtr}min`, (dtr2StartX + dtr2EndX) / 2, dtrY + 19);
   }
   
   // --- Legend / params table ---
   const p1leg = gd.p1;
   let legendHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
   
-  legendHtml += `<div style="background:var(--panel2);border-left:3px solid #0d47a1;border-radius:6px;padding:10px 14px">
-    <div style="font-weight:700;color:#0d47a1;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
+  legendHtml += `<div style="background:var(--panel2);border-left:3px solid #3b82f6;border-radius:6px;padding:10px 14px">
+    <div style="font-weight:700;color:#3b82f6;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
       🤿 Plongée 1
     </div>
     <div style="font-size:0.82rem;line-height:1.8">
@@ -1990,15 +2122,15 @@ function drawMainGraph() {
       Durée fond : <strong>${p1leg.duree} min</strong><br>
       Paliers : <strong>${formatPaliers(p1leg)}</strong><br>
       DTR : <strong>${p1leg.dtrReel !== undefined ? p1leg.dtrReel : p1leg.dtr} min</strong>${p1leg.dtrReel !== undefined && p1leg.dtrReel !== p1leg.dtr ? ` <span style="color:var(--text-dim);font-weight:normal">(table : ${p1leg.dtr} min)</span>` : ''}<br>
-      GPS : <strong style="color:${p1leg.gps==='*'?'#b71c1c':'#00695c'}">${p1leg.gps}</strong><br>
+      GPS : <strong style="color:${p1leg.gps==='*'?'#ef4444':'#10b981'}">${p1leg.gps}</strong><br>
       ${p1leg.heure ? `Immersion : <strong>${p1leg.heure}</strong><br>Sortie : <strong>${addMinutes(p1leg.heure, p1Pts[p1Pts.length-1].t)}</strong>` : ''}
     </div>
   </div>`;
   
   if (gd.p2) {
     const p2 = gd.p2;
-    legendHtml += `<div style="background:var(--panel2);border-left:3px solid #00695c;border-radius:6px;padding:10px 14px">
-      <div style="font-weight:700;color:#00695c;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
+    legendHtml += `<div style="background:var(--panel2);border-left:3px solid #10b981;border-radius:6px;padding:10px 14px">
+      <div style="font-weight:700;color:#10b981;font-size:0.78rem;text-transform:uppercase;margin-bottom:6px">
         🤿 Plongée 2 ${gd.typeLabel ? `<span style="color:var(--text-dim);font-weight:400">(${gd.typeLabel})</span>` : ''}
       </div>
       <div style="font-size:0.82rem;line-height:1.8">
@@ -2008,7 +2140,7 @@ function drawMainGraph() {
         ${gd.majoration ? `Majoration : <strong>+${gd.majoration} min</strong><br>` : ''}
         Paliers : <strong>${formatPaliers(p2)}</strong><br>
         DTR : <strong>${p2.dtr} min</strong><br>
-        GPS : <strong style="color:${p2.gps==='*'?'#b71c1c':'#00695c'}">${p2.gps}</strong>
+        GPS : <strong style="color:${p2.gps==='*'?'#ef4444':'#10b981'}">${p2.gps}</strong>
       </div>
     </div>`;
   } else {
@@ -2018,10 +2150,10 @@ function drawMainGraph() {
   }
   
   legendHtml += `</div>`;
-  legendHtml += `<div style="margin-top:10px;padding:8px 12px;background:#e8f4fd;border-radius:6px;font-size:0.76rem;color:var(--text-dim)">
+  legendHtml += `<div style="margin-top:10px;padding:8px 12px;background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:6px;font-size:0.76rem;color:var(--text-dim)">
     <strong>Vitesses :</strong> Descente / Remontée fond → palier : 15–17 m/min · Entre paliers : 6 m/min &nbsp;|&nbsp;
     <strong>DTR</strong> = Durée Totale de Remontée &nbsp;|&nbsp;
-    <strong style="color:#00695c">GPS</strong> = Groupe d'azote résiduel &nbsp;|&nbsp;
+    <strong style="color:#10b981">GPS</strong> = Groupe d'azote résiduel &nbsp;|&nbsp;
     <span style="color:#b71c1c"><strong>GPS ★</strong> = Successives interdites</span>
   </div>`;
   
@@ -2046,7 +2178,7 @@ function showGraph2PTab() {
 }
 
 
-function drawMainGraph2P() {
+function drawMainGraph2P(exportScale) {
   const noDataEl = document.getElementById('graph2p-no-data');
   const legend = document.getElementById('graph2p-legend');
   const gd = window.graphData2P;
@@ -2059,22 +2191,25 @@ function drawMainGraph2P() {
 
   const canvas = document.getElementById('canvas2Pmain');
   canvas.style.display = 'block';
-  const W = canvas.offsetWidth || 700;
-  const H = 360;
-  canvas.width = W; canvas.height = H;
+  const _scale = exportScale || 1;
+  const W = exportScale ? 900 : (canvas.offsetWidth || 700);
+  const H = exportScale ? 480 : 360;
+  canvas.width  = W * _scale;
+  canvas.height = H * _scale;
   const ctx = canvas.getContext('2d');
+  if (_scale !== 1) ctx.scale(_scale, _scale);
 
   const pad = { top: 60, right: 24, bottom: 55, left: 52 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
 
   const C = {
-    bg: '#e8f4fd', grid: 'rgba(21,101,192,0.12)', axis: '#18304a',
-    p1line: '#0d47a1', p1fill: 'rgba(13,71,161,0.15)',
-    p2line: '#00695c', p2fill: 'rgba(0,105,92,0.13)',
-    palier: '#bf360c', surface: '#6a8fa8', label: '#0a1520',
-    labelBg: 'rgba(255,255,255,0.88)', gps: '#00695c', warn: '#bf360c',
-    hour: '#1a3a5c', speed: '#7b1fa2', dtr: '#e65100', rapid: '#e53935',
+    bg: '#eaf4fc', grid: 'rgba(13,37,64,0.10)', axis: '#2a5070',
+    p1line: '#3b82f6', p1fill: 'rgba(59,130,246,0.18)',
+    p2line: '#10b981', p2fill: 'rgba(16,185,129,0.15)',
+    palier: '#8b1a2a', surface: '#6a8fa8', label: '#0a1520',
+    labelBg: 'rgba(255,255,255,0.90)', gps: '#10b981', warn: '#f97316',
+    hour: '#2a5070', speed: '#c084fc', dtr: '#8b1a2a', rapid: '#ef4444',
   };
 
   function buildPts(entry, startMin, dureeAffichee) {
@@ -2207,7 +2342,7 @@ function drawMainGraph2P() {
   ctx.stroke();
 
   // Axis labels
-  ctx.fillStyle = C.axis; ctx.font = '10px IBM Plex Sans, sans-serif';
+  ctx.fillStyle = C.axis; ctx.font = `${10 * _scale}px IBM Plex Sans, sans-serif`;
   ctx.textAlign = 'right';
   for (let d = 0; d <= maxDepth; d += 5) {
     ctx.fillText(d + 'm', pad.left - 4, ty(d) + 4);
@@ -2256,13 +2391,13 @@ function drawMainGraph2P() {
 
     // Étiquette durée intervalle compressée
     const intMidX = (tx(t_p1end) + tx(t_p2start)) / 2;
-    ctx.fillStyle = C.surface; ctx.font = 'italic 9px IBM Plex Sans, sans-serif';
+    ctx.fillStyle = C.surface; ctx.font = `italic ${9 * _scale}px IBM Plex Sans, sans-serif`;
     ctx.fillText('(' + Math.round(intervalMin) + 'min)', intMidX, pad.top + ch + 14);
   }
 
   function annotate(x, y, text, color, align, offX, offY) {
     const ax = x + (offX || 0), ay = y + (offY || 0);
-    ctx.font = 'bold 9px IBM Plex Sans, sans-serif';
+    ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
     const tw = ctx.measureText(text).width;
     const bx = align === 'left' ? ax : align === 'right' ? ax - tw : ax - tw/2;
     ctx.fillStyle = C.labelBg;
@@ -2335,7 +2470,7 @@ function drawMainGraph2P() {
     ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     // Diagonale pointillée violette épaisse par-dessus
-    ctx.strokeStyle = '#7b1fa2';
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 2.5;
     ctx.setLineDash([7, 4]);
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
@@ -2402,7 +2537,7 @@ function drawMainGraph2P() {
   ctx.moveTo(dtr1sx, dtrY1-3); ctx.lineTo(dtr1sx, dtrY1+3);
   ctx.moveTo(dtr1ex, dtrY1-3); ctx.lineTo(dtr1ex, dtrY1+3);
   ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = C.dtr; ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`; ctx.textAlign = 'center';
   const dtrReel1 = calcDTRReel(gd.p1, gd.p1.profRem);
   const dtrP1Label = dtrReel1 !== gd.p1.dtr
     ? `DTR P1: ${dtrReel1}min (t: ${gd.p1.dtr}min)`
@@ -2423,7 +2558,7 @@ function drawMainGraph2P() {
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
     ctx.lineWidth = 5;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.strokeStyle = '#7b1fa2';
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 2.5;
     ctx.setLineDash([7, 4]);
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
@@ -2486,7 +2621,7 @@ function drawMainGraph2P() {
   ctx.moveTo(dtr2sx, dtrY1-3); ctx.lineTo(dtr2sx, dtrY1+3);
   ctx.moveTo(dtr2ex, dtrY1-3); ctx.lineTo(dtr2ex, dtrY1+3);
   ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = 'bold 9px IBM Plex Sans, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = C.dtr; ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`; ctx.textAlign = 'center';
   const dtrReel2 = calcDTRReel(p2, p2.profRem);
   const dtrP2Label = dtrReel2 !== p2.dtr
     ? `DTR P2: ${dtrReel2}min (t: ${p2.dtr}min)`
@@ -2497,7 +2632,7 @@ function drawMainGraph2P() {
 
   // Alerte remontée rapide (si applicable)
   if (gd.p1.rapide || p2.rapide) {
-    ctx.font = 'bold 10px IBM Plex Sans, sans-serif';
+    ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
     ctx.fillStyle = C.rapid; ctx.textAlign = 'left';
     ctx.fillText('⚡ Procédure IPA I-4.4 applicable', pad.left, pad.top - 8);
   }
@@ -2724,11 +2859,9 @@ function exportPDF() {
   if (!panel.classList.contains('active')) panel.classList.add('active');
 
   // Forcer les dimensions du canvas
-  mainCvs.width  = 900;
-  mainCvs.height = 480;
-  drawMainGraph();
+  drawMainGraph(1.8);
 
-  // Capturer
+  // Capturer haute résolution
   let imgData = null;
   try {
     imgData = mainCvs.toDataURL('image/png');
@@ -2920,9 +3053,7 @@ function exportPDF2P() {
   panel2P.style.left       = '-9999px';
   if (!panel2P.classList.contains('active')) panel2P.classList.add('active');
 
-  if (cvs2Pmain) { cvs2Pmain.width = 900; cvs2Pmain.height = 480; }
-
-  drawMainGraph2P();
+  drawMainGraph2P(1.8);
 
   let imgData = null;
   try { imgData = cvs2Pmain ? cvs2Pmain.toDataURL('image/png') : null; } catch(e) {}

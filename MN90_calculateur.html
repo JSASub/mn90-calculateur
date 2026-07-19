@@ -237,7 +237,7 @@ header p {
   border-color: var(--cyan-dim);
   box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
   background: rgba(0,212,255,0.05);
-  color: #fff;
+  color: var(--text);
 }
 .field input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 0.85rem; }
 .field select { cursor: pointer; }
@@ -1277,7 +1277,13 @@ function calcSucc() {
 
   const intEl = document.getElementById('intervalle-info');
   const resEl = document.getElementById('result-succ');
-  
+
+  // Vider tous les résultats à chaque recalcul
+  intEl.innerHTML = '';
+  resEl.innerHTML = '';
+  document.getElementById('result-p1-inline').innerHTML = '';
+  document.getElementById('result-p2-inline').innerHTML = '';
+
   if (!p1_prof || !p1_duree || !p2_prof || !p2_duree) { intEl.innerHTML = ''; resEl.innerHTML = ''; return; }
 
   // Validation limites MN90
@@ -1646,13 +1652,13 @@ function drawMainGraph(exportScale) {
   const gd = window.graphDataSimple;
   const _scale = exportScale || 1;
   const W = exportScale ? 900 : (canvas.offsetWidth || 700);
-  const H = exportScale ? 480 : 360;
+  const H = exportScale ? 520 : 430;
   canvas.width  = W * _scale;
   canvas.height = H * _scale;
   const ctx = canvas.getContext('2d');
   if (_scale !== 1) ctx.scale(_scale, _scale);
-  
-  const pad = { top: 60, right: 24, bottom: 55, left: 52 };
+
+  const pad = { top: 74, right: 30, bottom: 105, left: 54 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
   
@@ -1796,18 +1802,48 @@ function drawMainGraph(exportScale) {
   ctx.textAlign = 'left';
   ctx.fillText('Durée (min)', pad.left, H - 8);
   
-  // --- Annotation helper ---
+  // --- Annotation helper (avec anti-collision) ---
+  const placedLabels = [];
   function annotate(x, y, text, color, align = 'center', offsetX = 0, offsetY = -10) {
-    const ax = x + offsetX, ay = y + offsetY;
     ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
     const tw = ctx.measureText(text).width;
     const bpad = 3;
-    let bx = ax;
-    if (align === 'left') bx = ax;
-    else if (align === 'right') bx = ax - tw;
-    else bx = ax - tw / 2;
+    const boxH = 14 + bpad;
+    const boxW = tw + bpad * 2;
+    let ax = x + offsetX, ay = y + offsetY;
+    let bx = align === 'left' ? ax : align === 'right' ? ax - tw : ax - tw / 2;
+    let by = ay - 10 - bpad;
+
+    // Anti-collision : pousse verticalement le libellé s'il chevauche un libellé déjà posé
+    const dir = offsetY <= 0 ? -1 : 1;
+    const step = boxH + 3;
+    let guard = 0;
+    const overlaps = (r) => !(bx + boxW < r.x || r.x + r.w < bx || by + boxH < r.y || r.y + r.h < by);
+    while (guard < 40 && placedLabels.some(overlaps)) {
+      by += dir * step;
+      ay += dir * step;
+      guard++;
+    }
+    placedLabels.push({ x: bx, y: by, w: boxW, h: boxH });
+
+    if (guard > 0) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 0.75;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(bx + boxW / 2, by + boxH / 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.fillStyle = C.labelBg;
-    ctx.fillRect(bx - bpad, ay - 10 - bpad, tw + bpad * 2, 14 + bpad);
+    ctx.fillRect(bx - bpad, by, boxW, boxH);
+    ctx.strokeStyle = 'rgba(13,37,64,0.18)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx - bpad, by, boxW, boxH);
     ctx.fillStyle = color;
     ctx.textAlign = align === 'center' ? 'center' : (align === 'right' ? 'right' : 'left');
     ctx.fillText(text, ax, ay);
@@ -1841,7 +1877,7 @@ function drawMainGraph(exportScale) {
   // Si profil diagonal, accolade au milieu vertical entre profTable et profRem, sinon sous profTable
   const hasDiag = p1.profRem && p1.profRem < p1.profTable;
   // Accolade fond : placée sous l'axe X (dans pad.bottom), pas dans la zone graphique
-  const fondY = H - pad.bottom + 28;
+  const fondY = pad.top + ch + 30;
   ctx.strokeStyle = C.p1line;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -1850,12 +1886,7 @@ function drawMainGraph(exportScale) {
   ctx.moveTo(fondEndX, fondY - 4); ctx.lineTo(fondEndX, fondY + 4);
   ctx.stroke();
   const fondLabel = hasDiag ? `Fond: ${p1.duree}min (${p1.profTable}m→${p1.profRem}m)` : `Fond: ${p1.duree}min`;
-  ctx.save();
-  ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
-  ctx.fillStyle = C.p1line;
-  ctx.textAlign = 'center';
-  ctx.fillText(fondLabel, (fondStartX + fondEndX) / 2, H - 8);
-  ctx.restore();
+  annotate((fondStartX + fondEndX) / 2, fondY, fondLabel, C.p1line, 'center', 0, 14);
   
   // Descent speed annotation
   const descentMidX = tx(p1Pts[1].t / 2);
@@ -1953,12 +1984,12 @@ function drawMainGraph(exportScale) {
   
   // GPS label P1
   const endP1X = tx(p1Pts[p1Pts.length - 1].t);
-  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', -9, -28);
+  annotate(endP1X, ty(0), `GPS: ${p1.gps}`, p1.gps === '*' ? C.warn : C.gps, 'center', -9, -16);
   
   // DTR P1
   const dtrStartX = tx(p1Pts[2].t);
   const dtrEndX = tx(p1Pts[p1Pts.length - 1].t);
-  const dtrY = pad.top + ch + 28;
+  const dtrY = pad.top + ch + 64;
   ctx.strokeStyle = C.dtr;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -1966,22 +1997,19 @@ function drawMainGraph(exportScale) {
   ctx.moveTo(dtrStartX, dtrY - 3); ctx.lineTo(dtrStartX, dtrY + 3);
   ctx.moveTo(dtrEndX, dtrY - 3); ctx.lineTo(dtrEndX, dtrY + 3);
   ctx.stroke();
-  ctx.fillStyle = C.dtr;
-  ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
-  ctx.textAlign = 'center';
   const dtrReelP1 = p1.dtrReel !== undefined ? p1.dtrReel : p1.dtr;
   const dtrLabelP1 = dtrReelP1 !== p1.dtr
     ? `DTR: ${dtrReelP1}min (table: ${p1.dtr}min)`
     : `DTR: ${p1.dtr}min`;
-  ctx.fillText(dtrLabelP1, (dtrStartX + dtrEndX) / 2, dtrY + 19);
+  annotate((dtrStartX + dtrEndX) / 2, dtrY, dtrLabelP1, C.dtr, 'center', 0, 16);
   
   // Heures P1
   if (p1.heure) {
     const immerX = tx(p1Pts[0].t);
     const sortieX = tx(p1Pts[p1Pts.length - 1].t);
-    annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -42);
+    annotate(immerX, ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -16);
     const sortieH = addMinutes(p1.heure, p1Pts[p1Pts.length - 1].t);
-    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', -9, -42);
+    annotate(sortieX, ty(0), `↑ ${sortieH}`, C.hour, 'center', -9, -36);
   }
   
   // --- P2 annotations ---
@@ -2012,9 +2040,9 @@ function drawMainGraph(exportScale) {
     const bandMidY = pad.top + ch / 2;
     // Afficher sur deux lignes si la bande est assez large, sinon une ligne
     if (bandW > 90) {
-      annotate(bandMidX, bandMidY - 10, `⏱ ${intLabel}`, C.surface, 'center', 0, 0);
+      annotate(bandMidX, bandMidY - 12, `⏱ ${intLabel}`, C.surface, 'center', 0, 0);
       annotate(bandMidX, bandMidY + 8, `(${intMins} min)`, C.surface, 'center', 0, 0);
-      annotate(bandMidX, bandMidY + 26, intTypeShort, C.surface, 'center', 0, 0);
+      annotate(bandMidX, bandMidY + 28, intTypeShort, C.surface, 'center', 0, 0);
     } else {
       annotate(bandMidX, bandMidY, `${intLabel}`, C.surface, 'center', 0, 0);
     }
@@ -2040,24 +2068,15 @@ function drawMainGraph(exportScale) {
     ctx.stroke();
     ctx.setLineDash([]);
     annotate(tx(p2Pts[1].t + p2.duree / 2), ty(p2.profTable), `Table: ${p2.profTable}m`, C.p2line, 'center', 0, -8);
-    
-    // Durée fond P2
-    const f2StartX = tx(p2Pts[1].t);
-    const f2EndX = tx(p2Pts[2].t);
-    const f2Y = ty(p2.profTable) + 8;
-    ctx.strokeStyle = C.p2line;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(f2StartX, f2Y); ctx.lineTo(f2EndX, f2Y);
-    ctx.moveTo(f2StartX, f2Y - 4); ctx.lineTo(f2StartX, f2Y + 4);
 
-    // Profondeur au début de la remontée P2
+    // Profondeur au début de la remontée P2 (bloc autonome, avant le reste)
     const rem2StartPt = p2Pts.find(p => p.isRemStart) || p2Pts[2];
     const rem2X = tx(rem2StartPt.t);
     const rem2Y = ty(rem2StartPt.d);
     const rem2Label = p2.profRem && p2.profRem < p2.profTable
       ? `↗ ${p2.profRem}m (réelle)`
       : `↗ ${p2.profTable}m`;
+    ctx.save();
     ctx.beginPath();
     ctx.arc(rem2X, rem2Y, 4, 0, Math.PI * 2);
     ctx.fillStyle = C.warn;
@@ -2072,16 +2091,22 @@ function drawMainGraph(exportScale) {
     ctx.moveTo(rem2X, rem2Y);
     ctx.lineTo(pad.left, rem2Y);
     ctx.stroke();
-    ctx.setLineDash([]);
-    annotate(rem2X, rem2Y, rem2Label, C.warn, 'center', 0, -14);
-    ctx.moveTo(f2EndX, f2Y - 4); ctx.lineTo(f2EndX, f2Y + 4);
-    ctx.stroke();
-    ctx.save();
-    ctx.font = `bold ${10 * _scale}px IBM Plex Sans, sans-serif`;
-    ctx.fillStyle = C.p2line;
-    ctx.textAlign = 'center';
-    ctx.fillText(`Fond: ${p2.duree}min`, (f2StartX + f2EndX) / 2, H - 8);
     ctx.restore();
+    annotate(rem2X, rem2Y, rem2Label, C.warn, 'center', 0, -14);
+
+    // Durée fond P2 — accolade alignée sous l'axe avec celle de P1 (même ligne fondY)
+    const f2StartX = tx(p2Pts[1].t);
+    const f2EndX = tx(p2Pts[2].t);
+    ctx.save();
+    ctx.strokeStyle = C.p2line;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(f2StartX, fondY); ctx.lineTo(f2EndX, fondY);
+    ctx.moveTo(f2StartX, fondY - 4); ctx.lineTo(f2StartX, fondY + 4);
+    ctx.moveTo(f2EndX, fondY - 4); ctx.lineTo(f2EndX, fondY + 4);
+    ctx.stroke();
+    ctx.restore();
+    annotate((f2StartX + f2EndX) / 2, fondY, `Fond: ${p2.duree}min`, C.p2line, 'center', 0, 14);
     
     // P2 paliers
     p2data.paliers.forEach(pal => {
@@ -2103,9 +2128,9 @@ function drawMainGraph(exportScale) {
     
     // GPS P2
     const endP2X = tx(p2Pts[p2Pts.length - 1].t);
-    annotate(endP2X, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
+    annotate(endP2X, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -16);
     
-    // DTR P2
+    // DTR P2 — même ligne que DTR P1
     const dtr2StartX = tx(p2Pts[2].t);
     const dtr2EndX = tx(p2Pts[p2Pts.length - 1].t);
     ctx.strokeStyle = C.dtr;
@@ -2115,10 +2140,7 @@ function drawMainGraph(exportScale) {
     ctx.moveTo(dtr2StartX, dtrY - 3); ctx.lineTo(dtr2StartX, dtrY + 3);
     ctx.moveTo(dtr2EndX, dtrY - 3); ctx.lineTo(dtr2EndX, dtrY + 3);
     ctx.stroke();
-    ctx.fillStyle = C.dtr;
-    ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(`DTR: ${p2.dtr}min`, (dtr2StartX + dtr2EndX) / 2, dtrY + 19);
+    annotate((dtr2StartX + dtr2EndX) / 2, dtrY, `DTR: ${p2.dtr}min`, C.dtr, 'center', 0, 16);
   }
   
   // --- Legend / params table ---
@@ -2205,13 +2227,13 @@ function drawMainGraph2P(exportScale) {
   canvas.style.display = 'block';
   const _scale = exportScale || 1;
   const W = exportScale ? 900 : (canvas.offsetWidth || 700);
-  const H = exportScale ? 480 : 360;
+  const H = exportScale ? 520 : 430;
   canvas.width  = W * _scale;
   canvas.height = H * _scale;
   const ctx = canvas.getContext('2d');
   if (_scale !== 1) ctx.scale(_scale, _scale);
 
-  const pad = { top: 60, right: 24, bottom: 55, left: 52 };
+  const pad = { top: 74, right: 30, bottom: 105, left: 54 };
   const cw = W - pad.left - pad.right;
   const ch = H - pad.top - pad.bottom;
 
@@ -2411,14 +2433,49 @@ function drawMainGraph2P(exportScale) {
     ctx.fillText('(' + Math.round(intervalMin) + 'min)', intMidX, pad.top + ch + 14);
   }
 
+  const placedLabels = [];
   function annotate(x, y, text, color, align, offX, offY) {
-    const ax = x + (offX || 0), ay = y + (offY || 0);
+    align = align || 'center';
     ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`;
     const tw = ctx.measureText(text).width;
-    const bx = align === 'left' ? ax : align === 'right' ? ax - tw : ax - tw/2;
+    const bpad = 3;
+    const boxH = 14 + bpad;
+    const boxW = tw + bpad * 2;
+    let ax = x + (offX || 0), ay = y + (offY || 0);
+    let bx = align === 'left' ? ax : align === 'right' ? ax - tw : ax - tw / 2;
+    let by = ay - 10 - bpad;
+
+    const dir = (offY || 0) <= 0 ? -1 : 1;
+    const step = boxH + 3;
+    let guard = 0;
+    const overlaps = (r) => !(bx + boxW < r.x || r.x + r.w < bx || by + boxH < r.y || r.y + r.h < by);
+    while (guard < 40 && placedLabels.some(overlaps)) {
+      by += dir * step;
+      ay += dir * step;
+      guard++;
+    }
+    placedLabels.push({ x: bx, y: by, w: boxW, h: boxH });
+
+    if (guard > 0) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 0.75;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(bx + boxW / 2, by + boxH / 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     ctx.fillStyle = C.labelBg;
-    ctx.fillRect(bx - 2, ay - 10, tw + 4, 13);
-    ctx.fillStyle = color; ctx.textAlign = align || 'center';
+    ctx.fillRect(bx - bpad, by, boxW, boxH);
+    ctx.strokeStyle = 'rgba(13,37,64,0.18)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx - bpad, by, boxW, boxH);
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
     ctx.fillText(text, ax, ay);
   }
 
@@ -2509,14 +2566,16 @@ function drawMainGraph2P(exportScale) {
   ctx.stroke(); ctx.setLineDash([]);
   annotate(pad.left + 5, ty(gd.p1.profTable), `P1 table: ${gd.p1.profTable}m`, C.p1line, 'left', 0, 14);
 
-  // Durée fond P1
+  // Durée fond P1 — accolade fixe sous l'axe
   const f1x0 = tx(p1data.pts[1].t), f1x1 = tx(p1data.pts[2].t);
-  const f1y = ty(gd.p1.profTable) + 8;
-  ctx.strokeStyle = C.p1line; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(f1x0, f1y-3); ctx.lineTo(f1x0, f1y+3);
-  ctx.moveTo(f1x0, f1y); ctx.lineTo(f1x1, f1y);
-  ctx.moveTo(f1x1, f1y-3); ctx.lineTo(f1x1, f1y+3); ctx.stroke();
-  annotate((f1x0+f1x1)/2, f1y, `${gd.p1.dureeReelle || gd.p1.duree}min`, C.p1line, 'center', 0, 20);
+  const fondY2P = pad.top + ch + 40;
+  ctx.strokeStyle = C.p1line; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(f1x0, fondY2P); ctx.lineTo(f1x1, fondY2P);
+  ctx.moveTo(f1x0, fondY2P-4); ctx.lineTo(f1x0, fondY2P+4);
+  ctx.moveTo(f1x1, fondY2P-4); ctx.lineTo(f1x1, fondY2P+4);
+  ctx.stroke();
+  annotate((f1x0+f1x1)/2, fondY2P, `Fond P1: ${gd.p1.dureeReelle || gd.p1.duree}min`, C.p1line, 'center', 0, 14);
 
   // Paliers P1
   for (let i = 0; i < p1data.paliers.length; i++) {
@@ -2532,33 +2591,32 @@ function drawMainGraph2P(exportScale) {
 
   // GPS P1
   const endP1x = tx(p1data.endMin);
-  annotate(endP1x, ty(0), `GPS: ${gd.p1.gps}`, gd.p1.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
+  annotate(endP1x, ty(0), `GPS: ${gd.p1.gps}`, gd.p1.gps === '*' ? C.warn : C.gps, 'center', 0, -16);
 
   // Heures P1
   const p1 = gd.p1;
   if (p1.heure) {
-    annotate(tx(p1data.pts[0].t), ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -28);
+    annotate(tx(p1data.pts[0].t), ty(0), `↓ ${p1.heure}`, C.hour, 'center', 0, -16);
     const sortieP1 = addMinutes(p1.heure, p1data.endMin);
-    annotate(endP1x, ty(0), `↑ ${sortieP1}`, C.hour, 'center', 0, -42);
+    annotate(endP1x, ty(0), `↑ ${sortieP1}`, C.hour, 'center', 0, -36);
   }
 
 
 
   // DTR P1
   const dtr1sx = tx(p1data.pts[2].t), dtr1ex = tx(p1data.endMin);
-  const dtrY1 = pad.top + ch + 28;
+  const dtrY1 = pad.top + ch + 64;
   ctx.strokeStyle = C.dtr; ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(dtr1sx, dtrY1); ctx.lineTo(dtr1ex, dtrY1);
   ctx.moveTo(dtr1sx, dtrY1-3); ctx.lineTo(dtr1sx, dtrY1+3);
   ctx.moveTo(dtr1ex, dtrY1-3); ctx.lineTo(dtr1ex, dtrY1+3);
   ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`; ctx.textAlign = 'center';
   const dtrReel1 = calcDTRReel(gd.p1, gd.p1.profRem);
   const dtrP1Label = dtrReel1 !== gd.p1.dtr
     ? `DTR P1: ${dtrReel1}min (t: ${gd.p1.dtr}min)`
     : `DTR P1: ${dtrReel1}min`;
-  ctx.fillText(dtrP1Label, (dtr1sx+dtr1ex)/2, dtrY1+10);
+  annotate((dtr1sx+dtr1ex)/2, dtrY1, dtrP1Label, C.dtr, 'center', 0, 16);
 
   // ── PLONGÉE 2 ──
   const p2 = gd.p2;
@@ -2596,14 +2654,15 @@ function drawMainGraph2P(exportScale) {
   ctx.stroke(); ctx.setLineDash([]);
   annotate(tx(p2data.pts[1].t) + 5, ty(p2.profTable), `P2 table: ${p2.profTable}m`, C.p2line, 'left', 0, 14);
 
-  // Durée fond P2
+  // Durée fond P2 — même ligne que P1
   const f2x0 = tx(p2data.pts[1].t), f2x1 = tx(p2data.pts[2].t);
-  const f2y = ty(p2.profTable) + 8;
-  ctx.strokeStyle = C.p2line; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(f2x0, f2y-3); ctx.lineTo(f2x0, f2y+3);
-  ctx.moveTo(f2x0, f2y); ctx.lineTo(f2x1, f2y);
-  ctx.moveTo(f2x1, f2y-3); ctx.lineTo(f2x1, f2y+3); ctx.stroke();
-  annotate((f2x0+f2x1)/2, f2y, `${p2.dureeReelle || p2.duree}min`, C.p2line, 'center', 0, 20);
+  ctx.strokeStyle = C.p2line; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(f2x0, fondY2P); ctx.lineTo(f2x1, fondY2P);
+  ctx.moveTo(f2x0, fondY2P-4); ctx.lineTo(f2x0, fondY2P+4);
+  ctx.moveTo(f2x1, fondY2P-4); ctx.lineTo(f2x1, fondY2P+4);
+  ctx.stroke();
+  annotate((f2x0+f2x1)/2, fondY2P, `Fond P2: ${p2.dureeReelle || p2.duree}min`, C.p2line, 'center', 0, 14);
 
 
   // Paliers P2
@@ -2620,16 +2679,16 @@ function drawMainGraph2P(exportScale) {
 
   // GPS P2
   const endP2x = tx(p2data.endMin);
-  annotate(endP2x, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -28);
+  annotate(endP2x, ty(0), `GPS: ${p2.gps}`, p2.gps === '*' ? C.warn : C.gps, 'center', 0, -16);
 
   // Heures P2
   if (p2.heure) {
-    annotate(tx(p2data.pts[0].t), ty(0), `↓ ${p2.heure}`, C.hour, 'center', 0, -28);
+    annotate(tx(p2data.pts[0].t), ty(0), `↓ ${p2.heure}`, C.hour, 'center', 0, -16);
     const sortieP2 = addMinutes(p2.heure, p2data.endMin - p2data.pts[0].t);
-    annotate(endP2x, ty(0), `↑ ${sortieP2}`, C.hour, 'center', 0, -42);
+    annotate(endP2x, ty(0), `↑ ${sortieP2}`, C.hour, 'center', 0, -36);
   }
 
-  // DTR P2
+  // DTR P2 — même ligne que DTR P1
   const dtr2sx = tx(p2data.pts[2].t), dtr2ex = tx(p2data.endMin);
   ctx.strokeStyle = C.dtr; ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -2637,12 +2696,11 @@ function drawMainGraph2P(exportScale) {
   ctx.moveTo(dtr2sx, dtrY1-3); ctx.lineTo(dtr2sx, dtrY1+3);
   ctx.moveTo(dtr2ex, dtrY1-3); ctx.lineTo(dtr2ex, dtrY1+3);
   ctx.stroke();
-  ctx.fillStyle = C.dtr; ctx.font = `bold ${9 * _scale}px IBM Plex Sans, sans-serif`; ctx.textAlign = 'center';
   const dtrReel2 = calcDTRReel(p2, p2.profRem);
   const dtrP2Label = dtrReel2 !== p2.dtr
     ? `DTR P2: ${dtrReel2}min (t: ${p2.dtr}min)`
     : `DTR P2: ${dtrReel2}min`;
-  ctx.fillText(dtrP2Label, (dtr2sx+dtr2ex)/2, dtrY1+10);
+  annotate((dtr2sx+dtr2ex)/2, dtrY1, dtrP2Label, C.dtr, 'center', 0, 16);
 
 
 
@@ -2679,6 +2737,13 @@ function drawMainGraph2P(exportScale) {
 
 // ===================== INIT =====================
 calcSimple();
+// Vider les résultats 2P au démarrage (évite d'afficher des valeurs par défaut sans signification)
+(function() {
+  const ids = ['result-p1-inline', 'intervalle-info', 'result-p2-inline', 'result-succ'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+  const pdfZone = document.getElementById('pdf2p-btn-zone');
+  if (pdfZone) pdfZone.style.display = 'none';
+})();
 // ===================== EXPORT PDF =====================
 
 function exportPDF() {
